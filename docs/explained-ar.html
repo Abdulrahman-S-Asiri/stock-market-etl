@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شرح مشروع Stock ETL</title>
+<style>
+  :root {
+    --bg: #F6F6F3; --surface: #FFFFFF; --ink: #1C1F23; --ink-soft: #5B6169; --ink-faint: #8A9097;
+    --line: #E4E4DE; --accent: #0F766E; --accent-soft: #E3F2EF;
+    --e: #2563EB; --e-soft: #EAF1FE; --t: #B45309; --t-soft: #FCF1E4; --l: #047857; --l-soft: #E5F5EE;
+    --bad: #B91C1C; --bad-soft: #FDECEC; --chip: rgba(120, 120, 120, .13);
+    --code-bg: #0F1720; --code-ink: #E6EDF3; --code-com: #8B949E; --code-str: #A5D6FF;
+    --code-kw: #FF7B72; --code-num: #79C0FF;
+    --radius: 14px;
+    --sans: "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, sans-serif;
+    --mono: Consolas, "Cascadia Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111315; --surface: #1A1D20; --ink: #E8EAED; --ink-soft: #A9AFB6; --ink-faint: #7D848C;
+      --line: #2B2F33; --accent: #2DD4BF; --accent-soft: #12302C;
+      --e: #60A5FA; --e-soft: #16233A; --t: #F59E0B; --t-soft: #2E2412; --l: #34D399; --l-soft: #11291F;
+      --bad: #F87171; --bad-soft: #331919; --code-bg: #0B0F14;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.85;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { line-height: 1.4; margin: 0; }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  b { font-weight: 650; }
+
+  code, .mono { font-family: var(--mono); direction: ltr; unicode-bidi: isolate; }
+  :not(pre) > code {
+    background: var(--chip); padding: 1px 6px; border-radius: 6px; font-size: .84em; white-space: nowrap;
+  }
+  :not(pre) > code.long { white-space: normal; overflow-wrap: anywhere; }
+
+  /* ---------- Top navigation ---------- */
+  nav.top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  nav.top .wrap { display: flex; gap: 6px; overflow-x: auto; padding-top: 10px; padding-bottom: 10px; scrollbar-width: none; }
+  nav.top a {
+    flex: none; text-decoration: none; color: var(--ink-soft); font-size: 14px;
+    padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+  }
+  nav.top a:hover { background: var(--chip); color: var(--ink); }
+  nav.top a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  /* ---------- Hero ---------- */
+  header.hero { padding: 56px 0 36px; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: .02em; }
+  header.hero h1 { font-size: 38px; margin: 8px 0 12px; }
+  header.hero .lead { color: var(--ink-soft); font-size: 19px; max-width: 720px; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .stat .num { font-size: 28px; font-weight: 700; font-family: var(--mono); }
+  .stat .lbl { color: var(--ink-soft); font-size: 14px; }
+  .note-line { color: var(--ink-faint); font-size: 14px; margin-top: 14px; }
+
+  /* ---------- Sections ---------- */
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  .sec-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .step-dot {
+    flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+    font-weight: 700; font-family: var(--mono); background: var(--accent-soft); color: var(--accent);
+  }
+  .step-dot.e { background: var(--e-soft); color: var(--e); }
+  .step-dot.t { background: var(--t-soft); color: var(--t); }
+  .step-dot.l { background: var(--l-soft); color: var(--l); }
+  .sec-head h2 { font-size: 26px; }
+  .sec-head .sub { color: var(--ink-soft); font-size: 15px; }
+  .prose { max-width: 780px; }
+  h3 { font-size: 19px; margin: 28px 0 12px; }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--line); border-inline-start: 4px solid var(--accent);
+    border-radius: 10px; padding: 14px 18px; margin: 16px 0; max-width: 780px;
+  }
+  .callout.t { border-inline-start-color: var(--t); }
+  .callout.l { border-inline-start-color: var(--l); }
+  .callout.bad { border-inline-start-color: var(--bad); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ---------- Pipeline diagram ---------- */
+  .flow { display: flex; align-items: stretch; gap: 8px; margin: 22px 0 14px; }
+  .node {
+    flex: 1; min-width: 0; text-align: center; cursor: pointer; font: inherit; color: inherit;
+    background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--ink-faint);
+    border-radius: 12px; padding: 12px 8px; transition: transform .15s, box-shadow .15s;
+  }
+  .node:hover { transform: translateY(-2px); }
+  .node.sel { box-shadow: 0 0 0 2px var(--accent); }
+  .node.e { border-top-color: var(--e); }
+  .node.t { border-top-color: var(--t); }
+  .node.l { border-top-color: var(--l); }
+  .node .n-title { font-weight: 700; font-size: 16px; }
+  .node .n-sub { color: var(--ink-soft); font-size: 13px; }
+  .arrow { align-self: center; color: var(--ink-faint); font-size: 22px; flex: none; }
+  .flow-panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 20px; min-height: 96px;
+  }
+  .flow-panel h4 { margin: 0 0 4px; font-size: 17px; }
+  .flow-panel p { margin: 0; color: var(--ink-soft); }
+
+  /* ---------- File tree ---------- */
+  .tree {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 8px 0; max-width: 780px;
+  }
+  .tree-row { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; padding: 7px 18px; align-items: center; }
+  .tree-row + .tree-row { border-top: 1px solid var(--line); }
+  .tree-row .path { font-family: var(--mono); direction: ltr; text-align: right; font-size: 14px; }
+  .tree-row .desc { color: var(--ink-soft); font-size: 15px; }
+
+  /* ---------- Code walkthrough ---------- */
+  .file { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin: 18px 0; }
+  .file-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 18px; border-bottom: 1px solid var(--line); }
+  .file-head .path { font-family: var(--mono); direction: ltr; font-weight: 600; font-size: 14px; }
+  .file-head .hint { color: var(--ink-faint); font-size: 13px; }
+  .chunk { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.55fr); }
+  .chunk + .chunk { border-top: 1px solid var(--line); }
+  .chunk .note { padding: 14px 18px; font-size: 15.5px; display: flex; gap: 10px; }
+  .chunk .badge {
+    flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--chip); font-size: 12px; font-weight: 700; font-family: var(--mono); margin-top: 3px;
+  }
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-ink); direction: ltr; text-align: left;
+    padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+  }
+  pre.solo { border-radius: 12px; margin: 12px 0; }
+  .tok-com { color: var(--code-com); }
+  .tok-str { color: var(--code-str); }
+  .tok-kw { color: var(--code-kw); }
+  .tok-num { color: var(--code-num); }
+
+  /* ---------- Data tables ---------- */
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  th { background: var(--chip); font-weight: 600; text-align: start; }
+  table.data { direction: ltr; font-family: var(--mono); }
+  table.data th, table.data td { text-align: left; }
+  td.dropped, th.dropped { color: var(--ink-faint); text-decoration: line-through; }
+  td.added, th.added { background: var(--t-soft); }
+  table.ar td { white-space: normal; }
+
+  /* ---------- Toggle / segmented controls ---------- */
+  .seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+  .seg button {
+    font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink-soft);
+    padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  }
+  .seg button.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .checks { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 4px; }
+  .checks li::before { content: "✓"; color: var(--t); font-weight: 700; margin-inline-end: 8px; }
+
+  /* ---------- Moving-average lab ---------- */
+  .lab { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 18px 0; }
+  .lab-title { font-weight: 700; margin-bottom: 4px; }
+  .lab-sub { color: var(--ink-soft); font-size: 15px; margin-bottom: 14px; }
+  .bars { direction: ltr; display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 4px; align-items: end; height: 170px; }
+  .bar {
+    height: 100%; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
+    background: none; border: 0; padding: 0; font: inherit; color: inherit;
+  }
+  .bar .fill { width: 100%; border-radius: 5px 5px 2px 2px; background: var(--chip); transition: background .15s; }
+  .bar:hover .fill { background: color-mix(in srgb, var(--t) 35%, transparent); }
+  .bar.win .fill { background: color-mix(in srgb, var(--t) 45%, transparent); }
+  .bar.sel .fill { background: var(--t); }
+  .bar.prev .fill { outline: 2px dashed var(--e); outline-offset: 1px; }
+  .bar-labels { direction: ltr; display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+  .bar-labels span { font-size: 11px; color: var(--ink-faint); text-align: center; font-family: var(--mono); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-soft); margin: 12px 0 4px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-inline-end: 6px; }
+  .lab-out { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .out-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .out-card .k { color: var(--ink-soft); font-size: 13px; }
+  .out-card .v { font-weight: 700; font-size: 20px; font-family: var(--mono); direction: ltr; unicode-bidi: isolate; text-align: right; }
+  .out-card .f { font-family: var(--mono); direction: ltr; text-align: left; font-size: 12.5px; color: var(--ink-soft); word-break: break-word; }
+  .null { color: var(--ink-faint); }
+
+  /* ---------- Upsert demo ---------- */
+  .demo { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 18px 0; }
+  .demo-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); font-weight: 500; }
+  .demo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .demo-msg { margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: var(--chip); font-size: 15px; min-height: 46px; }
+  .demo-msg.good { background: var(--l-soft); }
+  .demo-msg.bad { background: var(--bad-soft); }
+
+  /* ---------- Before/after for COALESCE ---------- */
+  .runs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .run { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .run .k { color: var(--ink-soft); font-size: 13px; margin-bottom: 6px; }
+  .run .row { font-family: var(--mono); direction: ltr; text-align: left; font-size: 14px; }
+  .run.final { border-color: var(--l); }
+
+  /* ---------- SQL tabs ---------- */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+  .tabs button {
+    font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .tabs button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+  /* ---------- Glossary ---------- */
+  .gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .term .en { font-family: var(--mono); font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+  .term .ar { color: var(--ink-soft); font-size: 15px; }
+
+  /* ---------- Exercises ---------- */
+  .ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 14px 0; }
+  .ex-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ex-head h3 { margin: 0; }
+  .lvl { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--l-soft); color: var(--l); }
+  .lvl.mid { background: var(--t-soft); color: var(--t); }
+  details { border-top: 1px solid var(--line); padding: 10px 0 0; margin-top: 10px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  details > div { padding-top: 8px; }
+
+  footer { height: 60px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .chunk { grid-template-columns: minmax(0, 1fr); }
+    .flow { flex-direction: column; }
+    .arrow { transform: rotate(-90deg); }
+    .lab-out, .demo-grid, .runs { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    header.hero h1 { font-size: 29px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tree-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .bars { height: 130px; gap: 2px; }
+    .bar-labels { gap: 2px; }
+    .bar-labels span { font-size: 9px; }
+    .wrap { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="الأقسام">
+  <div class="wrap">
+    <a href="#idea">1 · الفكرة</a>
+    <a href="#config">2 · الإعدادات</a>
+    <a href="#extract">3 · Extract</a>
+    <a href="#transform">4 · Transform</a>
+    <a href="#load">5 · Load</a>
+    <a href="#run">6 · التشغيل والاختبارات</a>
+    <a href="#sql">7 · SQL</a>
+    <a href="#glossary">8 · المصطلحات</a>
+    <a href="#exercises">9 · تمارين</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Data Engineering 101</div>
+    <h1>مشروع Stock Market ETL — خطوة بخطوة</h1>
+    <p class="lead">كيف ننقل أسعار الأسهم من الإنترنت إلى قاعدة بيانات نظيفة، ثم نسأل البيانات أسئلة بـ SQL.</p>
+    <div class="stats">
+      <div class="stat"><div class="num">5</div><div class="lbl">أسهم أمريكية</div></div>
+      <div class="stat"><div class="num">251</div><div class="lbl">يوم تداول لكل سهم</div></div>
+      <div class="stat"><div class="num">1,255</div><div class="lbl">صف في قاعدة البيانات</div></div>
+      <div class="stat"><div class="num">6</div><div class="lbl">اختبارات ناجحة</div></div>
+    </div>
+    <p class="note-line">كل الأمثلة في هذه الصفحة من بيانات حقيقية حُمّلت يوم 13 أكتوبر 2026 (آخر يوم تداول: 12 أكتوبر).</p>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 1. Idea ============ -->
+<section id="idea">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">1</div>
+      <div><h2>ما هو ETL؟</h2><div class="sub">الصورة الكبيرة قبل الكود</div></div>
+    </div>
+    <div class="prose">
+      <p><b>ETL</b> اختصار لثلاث خطوات: <b>Extract</b> (استخراج) ثم <b>Transform</b> (تحويل) ثم <b>Load</b> (تحميل). هذا أشهر نمط في هندسة البيانات.</p>
+      <p>فكّر فيه مثل المطبخ: تشتري الخضار من السوق (Extract)، تغسلها وتقطعها (Transform)، ثم ترتبها في الثلاجة (Load) لتستخدمها لاحقًا بسهولة.</p>
+      <p>اضغط على أي مرحلة لترى ماذا تفعل:</p>
+    </div>
+
+    <div class="flow" id="flow">
+      <button class="node" data-k="src"><div class="n-title">Yahoo Finance</div><div class="n-sub">المصدر</div></button>
+      <span class="arrow">←</span>
+      <button class="node e" data-k="e"><div class="n-title">Extract</div><div class="n-sub">extract.py</div></button>
+      <span class="arrow">←</span>
+      <button class="node t" data-k="t"><div class="n-title">Transform</div><div class="n-sub">transform.py</div></button>
+      <span class="arrow">←</span>
+      <button class="node l" data-k="l"><div class="n-title">Load</div><div class="n-sub">load.py</div></button>
+      <span class="arrow">←</span>
+      <button class="node" data-k="db"><div class="n-title">SQLite</div><div class="n-sub">stocks.db</div></button>
+    </div>
+    <div class="flow-panel" id="flowPanel" aria-live="polite"></div>
+
+    <h3>خريطة الملفات</h3>
+    <div class="tree">
+      <div class="tree-row"><div class="path">etl/config.py</div><div class="desc">الإعدادات: الأسهم والفترة</div></div>
+      <div class="tree-row"><div class="path">etl/extract.py</div><div class="desc">E — سحب البيانات الخام</div></div>
+      <div class="tree-row"><div class="path">etl/transform.py</div><div class="desc">T — التنظيف والحسابات</div></div>
+      <div class="tree-row"><div class="path">etl/load.py</div><div class="desc">L — الحفظ في SQLite</div></div>
+      <div class="tree-row"><div class="path">main.py</div><div class="desc">يشغّل E ← T ← L بالترتيب</div></div>
+      <div class="tree-row"><div class="path">tests/</div><div class="desc">اختبارات ببيانات وهمية</div></div>
+      <div class="tree-row"><div class="path">sql/example_queries.sql</div><div class="desc">استعلامات للتدريب</div></div>
+      <div class="tree-row"><div class="path">data/stocks.db</div><div class="desc">قاعدة البيانات (تُنشأ تلقائيًا)</div></div>
+    </div>
+    <div class="callout">
+      <p><b>لماذا كل خطوة في ملف؟</b> لأن كل ملف له مهمة واحدة. إذا تغيّر مصدر البيانات، تعدّل extract.py فقط. وإذا أردت عمودًا جديدًا، تعدّل transform.py فقط. وتستطيع اختبار كل خطوة وحدها.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. Config ============ -->
+<section id="config">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">2</div>
+      <div><h2>الإعدادات</h2><div class="sub">etl/config.py</div></div>
+    </div>
+    <p class="prose">نضع كل القيم التي قد تتغيّر في مكان واحد. لو أردت سهمًا جديدًا أو فترة أطول، تعدّل هنا فقط ولا تلمس باقي الكود.</p>
+    <div class="file" data-file="config"></div>
+  </div>
+</section>
+
+<!-- ============ 3. Extract ============ -->
+<section id="extract">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot e">E</div>
+      <div><h2>Extract — سحب البيانات</h2><div class="sub">etl/extract.py</div></div>
+    </div>
+    <p class="prose">مهمة هذه الخطوة شيء واحد: <b>إحضار البيانات الخام كما هي</b>. لا ننظّف هنا. فصل المهام يجعل كل خطوة سهلة الفهم والاختبار.</p>
+    <div class="file" data-file="extract"></div>
+
+    <h3>هكذا تبدو البيانات الخام (AAPL، آخر 3 أيام)</h3>
+    <div class="tbl">
+      <table class="data">
+        <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th><th>Dividends</th><th>Stock Splits</th><th>Ticker</th></tr></thead>
+        <tbody id="rawBody"></tbody>
+      </table>
+    </div>
+    <p class="prose" style="color:var(--ink-soft);font-size:15px">لاحظ: أسماء أعمدة بحروف كبيرة، أرقام بست خانات عشرية، تاريخ مع وقت، وأعمدة لا نحتاجها. هذا ما سيصلحه Transform.</p>
+  </div>
+</section>
+
+<!-- ============ 4. Transform ============ -->
+<section id="transform">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot t">T</div>
+      <div><h2>Transform — التنظيف والحسابات</h2><div class="sub">etl/transform.py</div></div>
+    </div>
+    <p class="prose">هنا نحوّل البيانات الخام إلى بيانات <b>نظيفة وموثوقة</b>، ونضيف أعمدة مفيدة للتحليل.</p>
+
+    <h3>قبل وبعد</h3>
+    <div class="seg" id="baSeg">
+      <button data-v="before">قبل (خام)</button>
+      <button data-v="after" class="on">بعد (نظيف)</button>
+    </div>
+    <div class="tbl"><table class="data" id="baTable"></table></div>
+    <ul class="checks">
+      <li>أسماء الأعمدة بحروف صغيرة (<code>snake_case</code>)</li>
+      <li>حذف <code>Dividends</code> و <code>Stock Splits</code></li>
+      <li>التاريخ نص بصيغة <code>YYYY-MM-DD</code></li>
+      <li>تقريب الأسعار لخانتين عشريتين</li>
+      <li>عمودان جديدان: <code>daily_return_pct</code> و <code>ma_7</code></li>
+    </ul>
+
+    <div class="file" data-file="transform"></div>
+
+    <h3>مختبر: كيف يُحسب العائد اليومي و ma_7؟</h3>
+    <div class="lab">
+      <div class="lab-title">20 يومًا حقيقية من سهم AAPL</div>
+      <div class="lab-sub">تخيّل أن الجدول يبدأ في 15 سبتمبر فقط. اضغط على أي يوم لترى الحساب.</div>
+      <div class="bars" id="bars"></div>
+      <div class="bar-labels" id="barLabels"></div>
+      <div class="legend">
+        <span><i style="background:var(--t)"></i>اليوم المختار</span>
+        <span><i style="background:color-mix(in srgb, var(--t) 45%, transparent)"></i>نافذة الـ 7 أيام</span>
+        <span><i style="outline:2px dashed var(--e);outline-offset:-2px"></i>اليوم السابق (للعائد)</span>
+      </div>
+      <div class="lab-out">
+        <div class="out-card"><div class="k">التاريخ وسعر الإغلاق</div><div class="v" id="oClose"></div><div class="f" id="oDate"></div></div>
+        <div class="out-card"><div class="k">daily_return_pct</div><div class="v" id="oRet"></div><div class="f" id="oRetF"></div></div>
+        <div class="out-card"><div class="k">ma_7</div><div class="v" id="oMa"></div><div class="f" id="oMaF"></div></div>
+      </div>
+    </div>
+    <div class="callout t">
+      <p>جرّب أول يوم: لا يوجد يوم قبله، فالعائد <b>NULL</b>. وجرّب الأيام الستة الأولى: لا توجد 7 أيام كاملة، فـ ma_7 <b>NULL</b>. هذا بالضبط ما تراه في قاعدة البيانات لأول أيام كل سهم.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. Load ============ -->
+<section id="load">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot l">L</div>
+      <div><h2>Load — الحفظ في قاعدة البيانات</h2><div class="sub">etl/load.py</div></div>
+    </div>
+    <div class="prose">
+      <p>نحفظ الجدول النظيف في SQLite. السؤال المهم هنا: <b>ماذا لو شغّلنا البرنامج مرتين؟</b></p>
+      <p>في هندسة البيانات، الـ pipeline سيُشغَّل كل يوم، وأحيانًا يُعاد تشغيله بعد خطأ. يجب ألا يصنع ذلك صفوفًا مكررة. هذه الصفة اسمها <b>Idempotency</b>: مرة واحدة أو عشر مرات، النتيجة نفسها.</p>
+    </div>
+
+    <h3>جرّبها بنفسك</h3>
+    <div class="demo">
+      <div class="demo-controls">
+        <div class="seg" id="modeSeg">
+          <button data-v="insert">INSERT عادي بدون Primary Key</button>
+          <button data-v="upsert" class="on">Primary Key + Upsert</button>
+        </div>
+        <button class="btn" id="runBtn">▶ شغّل main.py</button>
+        <button class="btn ghost" id="resetBtn">إعادة</button>
+      </div>
+      <div class="demo-grid">
+        <div class="out-card"><div class="k">مرات التشغيل</div><div class="v" id="dRuns">0</div></div>
+        <div class="out-card"><div class="k">صفوف الجدول</div><div class="v" id="dRows">0</div></div>
+        <div class="out-card"><div class="k">صفوف AAPL يوم <span class="mono">2026-10-12</span></div><div class="v" id="dKey">0</div></div>
+      </div>
+      <div class="demo-msg" id="dMsg">اضغط «شغّل» وراقب عدد الصفوف. (نفترض أن كل التشغيلات في نفس اليوم.)</div>
+    </div>
+    <p class="prose" style="color:var(--ink-soft);font-size:15px">حالة ثالثة: لو عندنا Primary Key لكن استخدمنا INSERT عادي، فالتشغيل الثاني سيفشل بخطأ <code>UNIQUE constraint failed</code>.</p>
+
+    <div class="file" data-file="load"></div>
+
+    <h3>لماذا COALESCE؟</h3>
+    <div class="prose">
+      <p>كل يوم نسحب «آخر سنة»، فبداية الفترة تتحرك للأمام. أقدم الأيام في التشغيل الجديد ليس قبلها أيام كافية، فيظهر ma_7 = NULL، مع أننا حسبناه بشكل صحيح في تشغيل سابق.</p>
+      <p><code>COALESCE(a, b)</code> ترجع أول قيمة ليست NULL: إذا جاءت القيمة الجديدة NULL، نحتفظ بالقديمة. وهذا المثال هو نفسه اختبار <code class="long">test_rerun_updates_prices_but_keeps_old_calculated_value</code>:</p>
+    </div>
+    <div class="runs">
+      <div class="run"><div class="k">التشغيل الأول</div><div class="row">close = 100.0<br>ma_7 = 99.0</div></div>
+      <div class="run"><div class="k">التشغيل الثاني يرسل</div><div class="row">close = 105.0<br>ma_7 = NULL</div></div>
+      <div class="run final"><div class="k">النتيجة في الجدول ✅</div><div class="row">close = 105.0 <span class="null">(تحدّث)</span><br>ma_7 = 99.0 <span class="null">(بقي)</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. Run + tests ============ -->
+<section id="run">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">6</div>
+      <div><h2>التشغيل والاختبارات</h2><div class="sub">main.py · tests/</div></div>
+    </div>
+    <p class="prose">main.py لا يحتوي منطقًا خاصًا به. وظيفته فقط ربط الخطوات الثلاث بالترتيب.</p>
+    <div class="file" data-file="main"></div>
+
+    <h3>ماذا ترى عند التشغيل</h3>
+    <pre class="solo" id="logOut"></pre>
+
+    <h3>أوامر التشغيل (PowerShell)</h3>
+    <pre class="solo" id="cmds"></pre>
+
+    <h3>الاختبارات: ماذا يثبت كل اختبار؟</h3>
+    <div class="prose">
+      <p>الاختبارات تستخدم <b>بيانات وهمية</b> نصنعها بأيدينا، لأن الاختبار يجب أن يكون سريعًا وثابتًا ولا يعتمد على الإنترنت. نعرف المدخل، ونعرف الناتج المتوقع بالضبط.</p>
+    </div>
+    <div class="tbl">
+      <table class="ar">
+        <thead><tr><th>الاختبار</th><th>ماذا يثبت</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_keeps_only_clean_columns</code></td><td>الأعمدة الصحيحة فقط وبالترتيب، والتاريخ نص.</td></tr>
+          <tr><td><code>test_daily_return_is_calculated_per_ticker</code></td><td>العائد يُحسب لكل سهم وحده، ولا يختلط سهم بآخر.</td></tr>
+          <tr><td><code>test_moving_average_needs_seven_days</code></td><td>ma_7 فارغ أول 6 أيام، ثم المتوسط الصحيح.</td></tr>
+          <tr><td><code>test_drops_missing_and_duplicate_rows</code></td><td>حذف الصفوف الناقصة والمكررة.</td></tr>
+          <tr><td><code>test_running_twice_does_not_duplicate_rows</code></td><td>Idempotency: تشغيلان = نفس النتيجة.</td></tr>
+          <tr><td><code>test_rerun_updates_prices_but_keeps_old_calculated_value</code></td><td>الـ Upsert يحدّث السعر، و COALESCE يحفظ القيمة القديمة.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">مثال على اختبار. كل اختبار له ثلاثة أجزاء: <b>جهّز</b> البيانات ← <b>نفّذ</b> الدالة ← <b>تحقّق</b> بـ <code>assert</code>:</p>
+    <pre class="solo" data-code="testExample"></pre>
+    <div class="callout">
+      <p><code>pytest.ini</code> يخبر pytest أين يجد مجلد <code>etl</code> (جذر المشروع) وأين الاختبارات. و <code>tmp_path</code> في اختبارات Load مجلد مؤقت يصنعه pytest، حتى لا نلمس قاعدة البيانات الحقيقية.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. SQL ============ -->
+<section id="sql">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">7</div>
+      <div><h2>نسأل البيانات بـ SQL</h2><div class="sub">sql/example_queries.sql</div></div>
+    </div>
+    <p class="prose">بعد التحميل، البيانات جاهزة للتحليل. هذه خمسة استعلامات مع نتائجها الحقيقية:</p>
+    <div class="tabs" id="sqlTabs"></div>
+    <div class="prose" id="sqlExplain"></div>
+    <pre class="solo" id="sqlCode"></pre>
+    <div class="tbl"><table class="data" id="sqlResult"></table></div>
+    <p class="prose" style="color:var(--ink-soft);font-size:15px" id="sqlNote"></p>
+    <div class="callout">
+      <p><b>كيف تشغّلها؟</b> افتح <code>data/stocks.db</code> بإضافة <b>SQLite Viewer</b> في VS Code، أو ببرنامج <b>DB Browser for SQLite</b>، ثم الصق الاستعلام.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. Glossary ============ -->
+<section id="glossary">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">8</div>
+      <div><h2>المصطلحات</h2><div class="sub">الكلمات التي ستسمعها كثيرًا في هندسة البيانات</div></div>
+    </div>
+    <div class="gloss" id="gloss"></div>
+  </div>
+</section>
+
+<!-- ============ 9. Exercises ============ -->
+<section id="exercises">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">9</div>
+      <div><h2>تمارين صغيرة</h2><div class="sub">عدّل الكود بنفسك. كل تمرين يناسب جلسة تركيز واحدة.</div></div>
+    </div>
+    <p class="prose">حاول أولًا بدون التلميح. بعد كل تعديل شغّل <code>pytest</code> ثم <code>python main.py</code>.</p>
+
+    <div class="ex">
+      <div class="ex-head"><h3>1. أضف سهمين جديدين</h3><span class="lvl">سهل</span></div>
+      <p>أضف <code>TSLA</code> (Tesla) و <code>2222.SR</code> (أرامكو) إلى المشروع، ثم تأكد أنهما وصلا لقاعدة البيانات.</p>
+      <details><summary>تلميح</summary><div><p>تحتاج تعديل ملف واحد فقط: <code>etl/config.py</code>. ثم شغّل الاستعلام رقم 1.</p></div></details>
+      <details><summary>الحل</summary><div>
+        <pre class="solo" data-code="ex1"></pre>
+        <p>بعد <code>python main.py</code> يجب أن يُظهر الاستعلام 1 سبعة أسهم. لاحظ أن عدد أيام أرامكو مختلف، لأن السوق السعودي يتداول من الأحد إلى الخميس وله إجازات مختلفة. وسطر <code>tz_localize(None)</code> في extract.py هو ما يجعل خلط المنطقتين الزمنيتين يعمل بدون مشاكل.</p>
+        <p>وإذا شغّلته والسوق مفتوح، سيظهر صف لليوم الحالي بسعر غير نهائي. لا مشكلة: التشغيل التالي يحدّثه بفضل الـ Upsert.</p>
+      </div></details>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head"><h3>2. أعلى يوم تداول لكل سهم</h3><span class="lvl">سهل · SQL</span></div>
+      <p>اكتب استعلامًا يُظهر لكل سهم اليوم الذي كان فيه حجم التداول (<code>volume</code>) هو الأعلى.</p>
+      <details><summary>تلميح</summary><div><p>استخدم <code class="long">ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY volume DESC)</code> لترقيم أيام كل سهم من الأعلى حجمًا، ثم خذ الرقم 1 فقط.</p></div></details>
+      <details><summary>الحل</summary><div>
+        <pre class="solo" data-code="ex2"></pre>
+        <p>هذا نمط مشهور جدًا اسمه <b>Top-N per group</b>. ستستخدمه كثيرًا في العمل.</p>
+      </div></details>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head"><h3>3. قاعدة جودة بيانات</h3><span class="lvl mid">متوسط</span></div>
+      <p>سعر الأدنى (<code>low</code>) لا يمكن أن يكون أعلى من سعر الأعلى (<code>high</code>)، والسعر لا يكون صفرًا أو سالبًا. احذف أي صف يخالف ذلك في Transform، واكتب اختبارًا يثبت أن القاعدة تعمل.</p>
+      <details><summary>تلميح</summary><div><p>بعد سطر <code>drop_duplicates</code> أضف فلترًا بشرطين مربوطين بـ <code>&amp;</code>. وفي الاختبار استخدم <code>make_raw</code> ثم غيّر قيمة <code>Low</code> في صف واحد لتكون مستحيلة.</p></div></details>
+      <details><summary>الحل</summary><div>
+        <p>في <code>etl/transform.py</code> بعد <code>drop_duplicates</code>:</p>
+        <pre class="solo" data-code="ex3a"></pre>
+        <p>وفي <code>tests/test_transform.py</code>:</p>
+        <pre class="solo" data-code="ex3b"></pre>
+      </div></details>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head"><h3>4. أضف عمود ma_30</h3><span class="lvl mid">متوسط</span></div>
+      <p>أضف متوسطًا متحركًا لآخر 30 يومًا. هذا التمرين يلمس كل الطبقات: Transform و Load والاختبارات وقاعدة البيانات.</p>
+      <details><summary>تلميح</summary><div>
+        <p>تحتاج تعديل 4 أماكن: الحساب في transform.py، والجدول والـ Upsert في load.py، واختباران سيفشلان (وهذا متوقع ومفيد: الاختبار يخبرك أن شكل البيانات تغيّر).</p>
+        <p>وانتبه: <code>CREATE TABLE IF NOT EXISTS</code> لن يضيف العمود لجدول موجود مسبقًا!</p>
+      </div></details>
+      <details><summary>الحل</summary><div>
+        <p><b>1) etl/transform.py</b>: بعد حساب ma_7 أضف العمود، ثم أضف <code>"ma_30"</code> إلى <code>decimal_cols</code>:</p>
+        <pre class="solo" data-code="ex4a"></pre>
+        <p><b>2) etl/load.py</b>: أضف العمود في 4 أماكن داخل SQL:</p>
+        <pre class="solo" data-code="ex4b"></pre>
+        <p><b>3) الاختبارات</b>: أضف <code>"ma_30"</code> في نهاية قائمة الأعمدة المتوقعة في <code>test_keeps_only_clean_columns</code>، وأضف <code>"ma_30": None</code> إلى القاموس في <code>make_clean</code> داخل test_load.py.</p>
+        <p><b>4) قاعدة البيانات</b>: الجدول القديم ليس فيه العمود، فاحذف الملف وأعد التشغيل:</p>
+        <pre class="solo" data-code="ex4c"></pre>
+        <p>في الشركات لا نحذف الجدول، بل نكتب <b>Migration</b>: <code class="long">ALTER TABLE daily_prices ADD COLUMN ma_30 REAL;</code></p>
+      </div></details>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer></footer>
+
+<script>
+/* ---------------- Syntax highlighting (tiny, Python + SQL) ---------------- */
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const PY_RE = /(#[^\n]*)|("""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\b(def|return|import|from|for|in|if|not|raise|with|try|finally|continue|lambda|None|True|False|and|or|as|assert)\b|\b(\d+(?:\.\d+)?)\b/g;
+const SQL_RE = /(#[^\n]*|--[^\n]*)|('[^'\n]*')|\b(SELECT|FROM|WHERE|GROUP|BY|ORDER|LIMIT|AS|WITH|OVER|PARTITION|LAG|MAX|MIN|COUNT|AVG|ROUND|AND|DESC|INSERT|INTO|VALUES|ON|CONFLICT|DO|UPDATE|SET|COALESCE|CREATE|TABLE|IF|NOT|EXISTS|PRIMARY|KEY|NULL|TEXT|REAL|INTEGER|substr|ROW_NUMBER|ALTER|ADD|COLUMN)\b|\b(\d+(?:\.\d+)?)\b/g;
+const SHELL_RE = /(#[^\n]*)|("[^"\n]*")|\b(python|pip|pytest|Remove-Item)\b|(\b\d+\b)/g;
+function hl(code, lang) {
+  const re = lang === "sql" ? SQL_RE : lang === "sh" ? SHELL_RE : PY_RE;
+  re.lastIndex = 0;
+  let out = "", last = 0, m;
+  while ((m = re.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    const cls = m[1] ? "com" : m[2] ? "str" : m[3] ? "kw" : "num";
+    out += `<span class="tok-${cls}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+
+/* ---------------- Code walkthrough content ---------------- */
+const FILES = {
+  config: { path: "etl/config.py", chunks: [
+    { c: `from pathlib import Path`,
+      n: `<code>Path</code> أداة من بايثون للتعامل مع مسارات الملفات. تعمل بنفس الطريقة على Windows و Mac و Linux.` },
+    { c: `# Stocks to pull (Yahoo Finance symbols).
+TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"]`,
+      n: `قائمة رموز الأسهم. الرمز (<b>Ticker</b>) هو الاسم المختصر للشركة في البورصة: <code>AAPL</code> = Apple و <code>NVDA</code> = Nvidia.` },
+    { c: `# How much history to download. Examples: "5d", "1mo", "6mo", "1y", "5y".
+PERIOD = "1y"`,
+      n: `كم من التاريخ نريد. <code>"1y"</code> تعني سنة كاملة للخلف من اليوم.` },
+    { c: `# Where the SQLite database file is saved.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DB_PATH = PROJECT_ROOT / "data" / "stocks.db"`,
+      n: `<code>__file__</code> هو مسار هذا الملف نفسه، و <code>.parent.parent</code> تصعد مجلدين لتصل إلى جذر المشروع. العلامة <code>/</code> مع <code>Path</code> تربط أجزاء المسار، فيكون الناتج <code>data/stocks.db</code>.` },
+  ]},
+
+  extract: { path: "etl/extract.py", chunks: [
+    { c: `import logging
+
+import pandas as pd
+import yfinance as yf
+
+logger = logging.getLogger(__name__)`,
+      n: `<code>logging</code> يطبع رسائل التقدم مع الوقت (أفضل من <code>print</code> في المشاريع الحقيقية). <code>pd</code> و <code>yf</code> اختصارات متعارف عليها للمكتبتين.` },
+    { c: `def extract_prices(tickers: list[str], period: str) -> pd.DataFrame:
+    """Download daily prices for each ticker and stack them into one table."""
+    frames = []
+    for ticker in tickers:`,
+      n: `الدالة تستقبل قائمة الأسهم والفترة، وترجع <code>DataFrame</code> (جدول في pandas). <code>frames</code> قائمة فارغة نجمع فيها جدول كل سهم، ثم نمرّ على الأسهم واحدًا واحدًا.` },
+    { c: `        # Ask Yahoo for this ticker's daily history (one row per trading day).
+        df = yf.Ticker(ticker).history(period=period, auto_adjust=True)`,
+      n: `نطلب من Yahoo التاريخ اليومي للسهم: صف لكل يوم تداول. <code>auto_adjust=True</code> تعني أسعارًا <b>معدّلة</b> بعد احتساب توزيعات الأرباح وتقسيم الأسهم، فتكون المقارنة بين الأيام عادلة.` },
+    { c: `        # Skip a ticker that returns nothing (bad symbol, network issue, rate limit).
+        if df.empty:
+            logger.warning("No data returned for %s, skipping", ticker)
+            continue`,
+      n: `إذا لم ترجع بيانات (رمز خاطئ، مشكلة إنترنت، أو حد للطلبات) نكتب تحذيرًا ونكمل بباقي الأسهم. سهم واحد معطّل لا يوقف الـ pipeline كله.` },
+    { c: `        # Yahoo dates carry the exchange timezone; drop it so all tickers match.
+        df.index = df.index.tz_localize(None)`,
+      n: `Yahoo يرجع التاريخ مع المنطقة الزمنية للبورصة، مثل <code>2026-10-08 00:00:00-04:00</code>. نحذف <code>-04:00</code> حتى تكون تواريخ كل الأسهم بنفس الشكل. هذا مهم لو خلطت أسهمًا أمريكية مع سعودية (<code>+03:00</code>).` },
+    { c: `        # Tag each row with its ticker and turn the Date index into a normal column.
+        df["Ticker"] = ticker
+        frames.append(df.reset_index())
+        logger.info("Extracted %d rows for %s", len(df), ticker)`,
+      n: `نضيف عمود <code>Ticker</code> لنعرف كل صف لأي سهم. التاريخ في جدول Yahoo يكون «فهرسًا» (index)، و <code>reset_index()</code> تحوّله إلى عمود عادي اسمه <code>Date</code>.` },
+    { c: `    if not frames:
+        raise RuntimeError("No data extracted for any ticker.")`,
+      n: `إذا فشلت كل الأسهم نوقف البرنامج بخطأ واضح، فلا معنى لتحميل جدول فارغ.` },
+    { c: `    # Stack all tickers into one long table.
+    return pd.concat(frames, ignore_index=True)`,
+      n: `<code>pd.concat</code> تلصق جداول الأسهم الخمسة تحت بعضها في جدول واحد طويل: 5 × 251 = 1,255 صف.` },
+  ]},
+
+  transform: { path: "etl/transform.py", chunks: [
+    { c: `# Raw Yahoo column name -> clean column name we store.
+COLUMN_MAP = {
+    "Ticker": "ticker",
+    "Date": "date",
+    "Open": "open",
+    "High": "high",
+    "Low": "low",
+    "Close": "close",
+    "Volume": "volume",
+}`,
+      n: `قاموس يربط الاسم الخام بالاسم النظيف. أي عمود ليس هنا (مثل <code>Dividends</code> و <code>Stock Splits</code>) لن نأخذه.` },
+    { c: `# Moving average window, in trading days (matches the ma_7 column name).
+MA_WINDOW = 7`,
+      n: `حجم نافذة المتوسط المتحرك. وضعناه هنا وليس في config لأن اسم العمود <code>ma_7</code> مرتبط بالرقم 7.` },
+    { c: `def transform_prices(raw: pd.DataFrame) -> pd.DataFrame:
+    """Return a clean table with one row per (ticker, date)."""
+    # Keep only the columns we need, with clean snake_case names.
+    df = raw[list(COLUMN_MAP)].rename(columns=COLUMN_MAP)`,
+      n: `<code>raw[list(COLUMN_MAP)]</code> تختار الأعمدة السبعة فقط، و <code>rename</code> تعطيها الأسماء الجديدة. صيغة <b>snake_case</b> (حروف صغيرة مع _) هي العرف في قواعد البيانات.` },
+    { c: `    # Store dates as 'YYYY-MM-DD' text (SQLite has no real date type).
+    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")`,
+      n: `SQLite ليس فيه نوع «تاريخ» حقيقي، فنحفظه نصًا بصيغة <code>YYYY-MM-DD</code>. ميزة هذه الصيغة أن الترتيب الأبجدي هو نفسه الترتيب الزمني، لذلك <code>MAX(date)</code> و <code>ORDER BY date</code> تعملان بشكل صحيح.` },
+    { c: `    # Drop rows with missing values, then duplicate (ticker, date) rows.
+    df = df.dropna(subset=["open", "high", "low", "close", "volume"])
+    df = df.drop_duplicates(subset=["ticker", "date"], keep="last")`,
+      n: `نحذف أي صف فيه سعر أو حجم مفقود، ثم نحذف الصفوف المكررة لنفس السهم في نفس اليوم ونُبقي آخر نسخة.` },
+    { c: `    # Sort each ticker's days in order; the calculations below depend on it.
+    df = df.sort_values(["ticker", "date"]).reset_index(drop=True)`,
+      n: `نرتب حسب السهم ثم التاريخ. الحسابات القادمة تعتمد على «اليوم السابق»، فبدون ترتيب تكون الأرقام خاطئة.` },
+    { c: `    # Daily return: % change of close vs the previous trading day, per ticker.
+    prev_close = df.groupby("ticker")["close"].shift(1)
+    df["daily_return_pct"] = (df["close"] / prev_close - 1) * 100`,
+      n: `<code>shift(1)</code> تُزيح الأسعار صفًا واحدًا للأسفل، فيصبح بجانب كل يوم سعر إغلاق اليوم السابق. <code>groupby("ticker")</code> تضمن ألّا نأخذ سعر سهم آخر. أول يوم لكل سهم ليس له يوم سابق، فتكون القيمة فارغة.` },
+    { c: `    # Moving average: mean close of the last 7 trading days, per ticker.
+    df["ma_7"] = df.groupby("ticker")["close"].transform(
+        lambda s: s.rolling(MA_WINDOW).mean()
+    )`,
+      n: `<code>rolling(7).mean()</code> تحسب لكل يوم متوسط إغلاق آخر 7 أيام (هو و 6 قبله). أول 6 أيام ليس لها 7 أيام كاملة، فتكون فارغة. <code>lambda s:</code> دالة صغيرة تُطبَّق على أسعار كل سهم وحده.` },
+    { c: `    # Round money values to 2 decimals and make volume a whole number.
+    decimal_cols = ["open", "high", "low", "close", "daily_return_pct", "ma_7"]
+    df[decimal_cols] = df[decimal_cols].round(2)
+    df["volume"] = df["volume"].astype("int64")
+
+    return df`,
+      n: `نقرّب الأرقام لخانتين عشريتين، ونجعل الحجم عددًا صحيحًا، ثم نرجع الجدول النظيف. لاحظ أن التقريب في النهاية، بعد الحسابات، حتى لا يؤثر على دقتها.` },
+  ]},
+
+  load: { path: "etl/load.py", chunks: [
+    { c: `import sqlite3
+from pathlib import Path
+
+import pandas as pd`,
+      n: `<code>sqlite3</code> مدمجة في بايثون ولا تحتاج تثبيتًا. هذا من أسباب اختيار SQLite للتعلم.` },
+    { lang: "sql", c: `# The primary key (ticker, date) means one row per stock per day.
+CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS daily_prices (
+    ticker            TEXT    NOT NULL,
+    date              TEXT    NOT NULL,  -- 'YYYY-MM-DD'
+    open              REAL    NOT NULL,
+    high              REAL    NOT NULL,
+    low               REAL    NOT NULL,
+    close             REAL    NOT NULL,
+    volume            INTEGER NOT NULL,
+    daily_return_pct  REAL,              -- NULL on a ticker's first day
+    ma_7              REAL,              -- NULL until 7 days of history exist
+    PRIMARY KEY (ticker, date)
+);
+"""`,
+      n: `ننشئ الجدول فقط إذا لم يكن موجودًا (<code>IF NOT EXISTS</code>). <code>NOT NULL</code> تعني أن القيمة إجبارية، والعمودان المحسوبان مسموح أن يكونا <code>NULL</code>. أهم سطر: <code>PRIMARY KEY (ticker, date)</code>، أي لا يمكن وجود صفين لنفس السهم في نفس اليوم.` },
+    { lang: "sql", c: `# Upsert: insert new rows; if (ticker, date) already exists, update it instead.
+# COALESCE keeps an old calculated value when the new run has no history for it
+# (the oldest days of each run have no previous day / no 7-day window).
+UPSERT_SQL = """
+INSERT INTO daily_prices
+    (ticker, date, open, high, low, close, volume, daily_return_pct, ma_7)
+VALUES
+    (:ticker, :date, :open, :high, :low, :close, :volume, :daily_return_pct, :ma_7)
+ON CONFLICT (ticker, date) DO UPDATE SET
+    open             = excluded.open,
+    high             = excluded.high,
+    low              = excluded.low,
+    close            = excluded.close,
+    volume           = excluded.volume,
+    daily_return_pct = COALESCE(excluded.daily_return_pct, daily_prices.daily_return_pct),
+    ma_7             = COALESCE(excluded.ma_7, daily_prices.ma_7);
+"""`,
+      n: `<b>هذا قلب الـ Load.</b> <code>INSERT</code> يحاول إضافة الصف. إذا وُجد صف بنفس المفتاح يحدث تعارض (<code>ON CONFLICT</code>)، فبدل الخطأ نحدّث الصف (<code>DO UPDATE</code>). <code>excluded</code> تعني «الصف الجديد الذي حاولنا إدخاله». و <code>:ticker</code> مكان فارغ تملؤه sqlite3 بالقيمة بشكل آمن، وهذا يحمي من SQL injection.` },
+    { c: `def load_prices(df: pd.DataFrame, db_path: Path) -> int:
+    """Upsert rows into the daily_prices table. Returns the number of rows sent."""
+    # Create the data/ folder on the first run.
+    db_path.parent.mkdir(parents=True, exist_ok=True)`,
+      n: `ننشئ مجلد <code>data</code> في أول تشغيل. <code>exist_ok=True</code> تعني: لا تُرجع خطأ إذا كان المجلد موجودًا.` },
+    { c: `    # Turn pandas NaN into Python None so SQLite stores a real NULL.
+    rows = df.astype(object).where(df.notna(), None).to_dict("records")`,
+      n: `pandas يسمّي القيمة المفقودة <code>NaN</code>، و SQL يسمّيها <code>NULL</code>. نحوّل <code>NaN</code> إلى <code>None</code> (وهي NULL في بايثون)، ثم نحوّل الجدول إلى قائمة، كل صف فيها قاموس مثل <code>{"ticker": "AAPL", ...}</code>.` },
+    { c: `    conn = sqlite3.connect(db_path)
+    try:
+        # "with conn" commits if everything works, or rolls back on any error.
+        with conn:
+            conn.execute(CREATE_TABLE_SQL)
+            conn.executemany(UPSERT_SQL, rows)
+    finally:
+        conn.close()
+
+    return len(rows)`,
+      n: `<code>with conn</code> تجعل العملية <b>Transaction</b>: إما تُحفظ كل الصفوف أو لا يُحفظ شيء، فلا يبقى جدول نصف محمّل. <code>executemany</code> تنفّذ نفس الأمر لكل صف. و <code>finally</code> تضمن إغلاق الاتصال حتى لو حدث خطأ.` },
+  ]},
+
+  main: { path: "main.py", chunks: [
+    { c: `import logging
+
+from etl import config
+from etl.extract import extract_prices
+from etl.load import load_prices
+from etl.transform import transform_prices
+
+logger = logging.getLogger("pipeline")`,
+      n: `نستورد الإعدادات والدوال الثلاث. كل خطوة في ملف مستقل، و main.py يربطها فقط.` },
+    { c: `def main() -> None:
+    # Print timestamped progress messages to the terminal.
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")`,
+      n: `نفعّل طباعة الرسائل بمستوى <code>INFO</code> مع الوقت، فترى في الـ terminal ما يحدث خطوة بخطوة.` },
+    { c: `    logger.info("Extract: downloading %s (%s)", ", ".join(config.TICKERS), config.PERIOD)
+    raw = extract_prices(config.TICKERS, config.PERIOD)
+
+    logger.info("Transform: cleaning %d raw rows", len(raw))
+    clean = transform_prices(raw)
+
+    logger.info("Load: writing %d rows to %s", len(clean), config.DB_PATH)
+    count = load_prices(clean, config.DB_PATH)
+
+    logger.info("Done: %d rows loaded", count)`,
+      n: `قلب المشروع ثلاثة استدعاءات. كل خطوة تأخذ ناتج الخطوة التي قبلها: <code>raw</code> يدخل Transform فيخرج <code>clean</code>، و <code>clean</code> يدخل Load.` },
+    { c: `if __name__ == "__main__":
+    main()`,
+      n: `هذا الشرط يشغّل <code>main()</code> فقط عند تشغيل الملف مباشرة (<code>python main.py</code>)، وليس عند استيراده من ملف آخر أو من الاختبارات.` },
+  ]},
+};
+
+/* ---------------- Standalone code snippets ---------------- */
+const SNIPPETS = {
+  testExample: { lang: "py", c: `def test_moving_average_needs_seven_days():
+    result = transform_prices(make_raw("AAPL", [1, 2, 3, 4, 5, 6, 7, 8]))
+
+    assert result["ma_7"].iloc[:6].isna().all()
+    assert result["ma_7"].iloc[6] == 4.0  # mean of 1..7
+    assert result["ma_7"].iloc[7] == 5.0  # mean of 2..8` },
+  ex1: { lang: "py", c: `TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "TSLA", "2222.SR"]` },
+  ex2: { lang: "sql", c: `SELECT ticker, date, volume
+FROM (
+    SELECT ticker, date, volume,
+           ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY volume DESC) AS rn
+    FROM daily_prices
+)
+WHERE rn = 1
+ORDER BY volume DESC;` },
+  ex3a: { lang: "py", c: `    # Data quality: remove impossible prices.
+    df = df[(df["high"] >= df["low"]) & (df["close"] > 0)]` },
+  ex3b: { lang: "py", c: `def test_drops_impossible_prices():
+    raw = make_raw("AAPL", [100, 101, 102])
+    raw.loc[1, "Low"] = 999  # low above high: impossible
+
+    result = transform_prices(raw)
+
+    assert result["date"].tolist() == ["2025-01-01", "2025-01-03"]` },
+  ex4a: { lang: "py", c: `    # Moving average: mean close of the last 30 trading days, per ticker.
+    df["ma_30"] = df.groupby("ticker")["close"].transform(
+        lambda s: s.rolling(30).mean()
+    )
+
+    decimal_cols = ["open", "high", "low", "close", "daily_return_pct", "ma_7", "ma_30"]` },
+  ex4b: { lang: "sql", c: `-- 1) CREATE TABLE: new column
+    ma_30             REAL,
+
+-- 2) INSERT column list and 3) VALUES
+    (ticker, date, open, high, low, close, volume, daily_return_pct, ma_7, ma_30)
+    (:ticker, :date, :open, :high, :low, :close, :volume, :daily_return_pct, :ma_7, :ma_30)
+
+-- 4) DO UPDATE SET (move the ; to the new last line)
+    ma_7             = COALESCE(excluded.ma_7, daily_prices.ma_7),
+    ma_30            = COALESCE(excluded.ma_30, daily_prices.ma_30);` },
+  ex4c: { lang: "sh", c: `Remove-Item data\\stocks.db
+python main.py` },
+};
+
+function renderFile(el, file) {
+  const head = `<div class="file-head"><span class="path">${file.path}</span><span class="hint">${file.chunks.length} أجزاء</span></div>`;
+  const body = file.chunks.map((ch, i) => `
+    <div class="chunk">
+      <div class="note"><span class="badge">${i + 1}</span><div>${ch.n}</div></div>
+      <pre>${hl(ch.c, ch.lang || "py")}</pre>
+    </div>`).join("");
+  el.innerHTML = head + body;
+}
+document.querySelectorAll("[data-file]").forEach(el => renderFile(el, FILES[el.dataset.file]));
+document.querySelectorAll("[data-code]").forEach(el => {
+  const s = SNIPPETS[el.dataset.code];
+  el.innerHTML = hl(s.c, s.lang);
+});
+
+/* ---------------- Pipeline diagram ---------------- */
+const FLOW = {
+  src: { t: "Yahoo Finance — المصدر", d: "موقع يعرض أسعار الأسهم. نصل إليه عبر مكتبة yfinance المجانية بدون مفتاح API. ملاحظة: المكتبة غير رسمية، فقد تتوقف أحيانًا أو تحدّ من الطلبات.", href: "#extract" },
+  e:   { t: "Extract — الاستخراج", d: "نسحب البيانات الخام كما هي: سعر الافتتاح والإغلاق والأعلى والأدنى وحجم التداول لكل يوم، لكل سهم.", href: "#extract" },
+  t:   { t: "Transform — التحويل", d: "ننظّف: أسماء أعمدة واضحة، حذف الناقص والمكرر، توحيد التاريخ، ثم نضيف العائد اليومي والمتوسط المتحرك.", href: "#transform" },
+  l:   { t: "Load — التحميل", d: "نحفظ الصفوف النظيفة في جدول daily_prices بطريقة Upsert، فلا تتكرر الصفوف مهما شغّلنا البرنامج.", href: "#load" },
+  db:  { t: "SQLite — قاعدة البيانات", d: "قاعدة بيانات كاملة في ملف واحد: data/stocks.db. نسألها بـ SQL لنحلل الأسعار.", href: "#sql" },
+};
+const flowPanel = document.getElementById("flowPanel");
+function selectNode(k) {
+  document.querySelectorAll(".node").forEach(n => n.classList.toggle("sel", n.dataset.k === k));
+  const f = FLOW[k];
+  flowPanel.innerHTML = `<h4>${f.t}</h4><p>${f.d} <a href="${f.href}">اقرأ الشرح ←</a></p>`;
+}
+document.querySelectorAll(".node").forEach(n => n.addEventListener("click", () => selectNode(n.dataset.k)));
+selectNode("e");
+
+/* ---------------- Raw / before-after tables ---------------- */
+const RAW = [
+  ["2026-10-08 00:00:00", 336.820007, 341.570007, 335.899994, 340.420013, 35332400],
+  ["2026-10-09 00:00:00", 331.700012, 338.609985, 330.700012, 336.640015, 37881200],
+  ["2026-10-12 00:00:00", 338.220001, 342.630005, 337.600006, 340.970001, 25848300],
+];
+const CLEAN = [
+  ["AAPL", "2026-10-08", 336.82, 341.57, 335.90, 340.42, 35332400, 1.11, 334.38],
+  ["AAPL", "2026-10-09", 331.70, 338.61, 330.70, 336.64, 37881200, -1.11, 334.89],
+  ["AAPL", "2026-10-12", 338.22, 342.63, 337.60, 340.97, 25848300, 1.29, 336.42],
+];
+const rawRow = r => `<td>${r[0]}</td>${r.slice(1, 5).map(v => `<td>${v.toFixed(6)}</td>`).join("")}<td>${r[5]}</td>`;
+document.getElementById("rawBody").innerHTML =
+  RAW.map(r => `<tr>${rawRow(r)}<td>0.0</td><td>0.0</td><td>AAPL</td></tr>`).join("");
+
+const baTable = document.getElementById("baTable");
+function renderBA(mode) {
+  if (mode === "before") {
+    baTable.innerHTML = `<thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th>
+      <th class="dropped">Dividends</th><th class="dropped">Stock Splits</th><th>Ticker</th></tr></thead><tbody>` +
+      RAW.map(r => `<tr>${rawRow(r)}<td class="dropped">0.0</td><td class="dropped">0.0</td><td>AAPL</td></tr>`).join("") + `</tbody>`;
+  } else {
+    baTable.innerHTML = `<thead><tr><th>ticker</th><th>date</th><th>open</th><th>high</th><th>low</th><th>close</th><th>volume</th>
+      <th class="added">daily_return_pct</th><th class="added">ma_7</th></tr></thead><tbody>` +
+      CLEAN.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td>${r.slice(2, 6).map(v => `<td>${v.toFixed(2)}</td>`).join("")}
+        <td>${r[6]}</td><td class="added">${r[7].toFixed(2)}</td><td class="added">${r[8].toFixed(2)}</td></tr>`).join("") + `</tbody>`;
+  }
+}
+function bindSeg(id, onChange) {
+  const seg = document.getElementById(id);
+  seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    onChange(b.dataset.v);
+  }));
+}
+bindSeg("baSeg", renderBA);
+renderBA("after");
+
+/* ---------------- Moving-average lab ---------------- */
+const LAB = [
+  ["2026-09-15", 331.34], ["2026-09-16", 332.41], ["2026-09-17", 337.00], ["2026-09-18", 336.13],
+  ["2026-09-21", 338.98], ["2026-09-22", 339.75], ["2026-09-23", 337.02], ["2026-09-24", 335.92],
+  ["2026-09-25", 341.07], ["2026-09-28", 338.40], ["2026-09-29", 329.40], ["2026-09-30", 333.02],
+  ["2026-10-01", 330.32], ["2026-10-02", 333.69], ["2026-10-05", 332.89], ["2026-10-06", 333.63],
+  ["2026-10-07", 336.67], ["2026-10-08", 340.42], ["2026-10-09", 336.64], ["2026-10-12", 340.97],
+];
+const closes = LAB.map(d => d[1]);
+const lo = Math.min(...closes) - 3, hi = Math.max(...closes) + 1;
+const barsEl = document.getElementById("bars");
+barsEl.innerHTML = LAB.map((d, i) =>
+  `<button class="bar" data-i="${i}" aria-label="${d[0]}"><div class="fill" style="height:${12 + (d[1] - lo) / (hi - lo) * 88}%"></div></button>`
+).join("");
+document.getElementById("barLabels").innerHTML =
+  LAB.map(d => `<span>${+d[0].slice(8)}/${+d[0].slice(5, 7)}</span>`).join("");
+
+function selectDay(i) {
+  barsEl.querySelectorAll(".bar").forEach((b, j) => {
+    b.classList.toggle("sel", j === i);
+    b.classList.toggle("win", i >= 6 && j < i && j > i - 7);
+    b.classList.toggle("prev", j === i - 1);
+  });
+  const c = closes[i];
+  document.getElementById("oClose").textContent = c.toFixed(2);
+  document.getElementById("oDate").textContent = LAB[i][0];
+
+  const ret = document.getElementById("oRet"), retF = document.getElementById("oRetF");
+  if (i === 0) {
+    ret.innerHTML = `<span class="null">NULL</span>`;
+    retF.textContent = "no previous day";
+  } else {
+    const p = closes[i - 1], r = (c / p - 1) * 100;
+    ret.textContent = (r > 0 ? "+" : "") + r.toFixed(2) + "%";
+    retF.textContent = `(${c.toFixed(2)} / ${p.toFixed(2)} - 1) × 100`;
+  }
+
+  const ma = document.getElementById("oMa"), maF = document.getElementById("oMaF");
+  if (i < 6) {
+    ma.innerHTML = `<span class="null">NULL</span>`;
+    maF.textContent = `only ${i + 1} of 7 days`;
+  } else {
+    const win = closes.slice(i - 6, i + 1);
+    ma.textContent = (win.reduce((a, b) => a + b, 0) / 7).toFixed(2);
+    maF.textContent = `(${win.map(v => v.toFixed(2)).join(" + ")}) / 7`;
+  }
+}
+barsEl.addEventListener("click", e => {
+  const b = e.target.closest(".bar");
+  if (b) selectDay(+b.dataset.i);
+});
+selectDay(LAB.length - 1);
+
+/* ---------------- Upsert demo ---------------- */
+const ROWS_PER_RUN = 1255;
+let mode = "upsert", runs = 0;
+const dRuns = document.getElementById("dRuns"), dRows = document.getElementById("dRows"),
+      dKey = document.getElementById("dKey"), dMsg = document.getElementById("dMsg");
+const fmt = n => n.toLocaleString("en-US");
+function renderDemo(msg, tone) {
+  const rows = mode === "insert" ? runs * ROWS_PER_RUN : (runs ? ROWS_PER_RUN : 0);
+  const key = mode === "insert" ? runs : (runs ? 1 : 0);
+  dRuns.textContent = runs;
+  dRows.textContent = fmt(rows);
+  dKey.textContent = key;
+  dKey.style.color = key > 1 ? "var(--bad)" : "";
+  dMsg.className = "demo-msg" + (tone ? " " + tone : "");
+  dMsg.innerHTML = msg;
+}
+document.getElementById("runBtn").addEventListener("click", () => {
+  runs += 1;
+  if (mode === "insert") {
+    renderDemo(runs === 1
+      ? `تمت إضافة ${fmt(ROWS_PER_RUN)} صف. يبدو كل شيء طبيعيًا... شغّله مرة أخرى.`
+      : `❌ أُضيف ${fmt(ROWS_PER_RUN)} صف مرة أخرى. الآن كل يوم مكرر ${runs} مرات، وأي متوسط أو مجموع في SQL سيكون خاطئًا.`,
+      runs === 1 ? "" : "bad");
+  } else {
+    renderDemo(runs === 1
+      ? `تم إدخال ${fmt(ROWS_PER_RUN)} صف جديد.`
+      : `✅ 0 صف جديد، و ${fmt(ROWS_PER_RUN)} صف تم تحديثه. الجدول كما هو: صف واحد لكل سهم في كل يوم.`,
+      "good");
+  }
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  runs = 0;
+  renderDemo("اضغط «شغّل» وراقب عدد الصفوف. (نفترض أن كل التشغيلات في نفس اليوم.)");
+});
+bindSeg("modeSeg", v => { mode = v; runs = 0; renderDemo("تغيّر الوضع. اضغط «شغّل» مرتين وقارن."); });
+
+/* ---------------- Logs and commands ---------------- */
+document.getElementById("logOut").textContent =
+`2026-10-13 12:15:05 INFO Extract: downloading AAPL, MSFT, NVDA, GOOGL, AMZN (1y)
+2026-10-13 12:15:10 INFO Extracted 251 rows for AAPL
+2026-10-13 12:15:10 INFO Extracted 251 rows for MSFT
+2026-10-13 12:15:10 INFO Extracted 251 rows for NVDA
+2026-10-13 12:15:11 INFO Extracted 251 rows for GOOGL
+2026-10-13 12:15:11 INFO Extracted 251 rows for AMZN
+2026-10-13 12:15:11 INFO Transform: cleaning 1255 raw rows
+2026-10-13 12:15:11 INFO Load: writing 1255 rows to ...\\data\\stocks.db
+2026-10-13 12:15:11 INFO Done: 1255 rows loaded`;
+document.getElementById("cmds").innerHTML = hl(
+`# 1. Activate the virtual environment
+.venv\\Scripts\\Activate.ps1
+
+# 2. Install dependencies (first time only)
+pip install -r requirements.txt
+
+# 3. Run the tests
+pytest
+
+# 4. Run the pipeline
+python main.py`, "sh");
+
+/* ---------------- SQL tabs ---------------- */
+const SQL = [
+  { tab: "عدد الأيام", cols: ["ticker", "days", "first_day", "last_day"],
+    ex: `عدد الأيام لكل سهم، وأول وآخر يوم. هذا أول استعلام تشغّله بعد أي تحميل لتتأكد: <b>هل وصلت البيانات كاملة؟</b> <code>GROUP BY</code> تجمع صفوف كل سهم معًا، و <code>COUNT</code> و <code>MIN</code> و <code>MAX</code> تحسب لكل مجموعة.`,
+    q: `SELECT ticker, COUNT(*) AS days, MIN(date) AS first_day, MAX(date) AS last_day
+FROM daily_prices
+GROUP BY ticker
+ORDER BY ticker;`,
+    rows: [["AAPL", 251, "2025-10-13", "2026-10-12"], ["AMZN", 251, "2025-10-13", "2026-10-12"], ["GOOGL", 251, "2025-10-13", "2026-10-12"], ["MSFT", 251, "2025-10-13", "2026-10-12"], ["NVDA", 251, "2025-10-13", "2026-10-12"]] },
+  { tab: "آخر سعر", cols: ["ticker", "date", "close"],
+    ex: `آخر سعر إغلاق لكل سهم. الاستعلام الداخلي بين القوسين (<b>subquery</b>) يجد آخر تاريخ في الجدول، ثم نأخذ صفوف ذلك اليوم فقط.`,
+    q: `SELECT ticker, date, close
+FROM daily_prices
+WHERE date = (SELECT MAX(date) FROM daily_prices)
+ORDER BY close DESC;`,
+    rows: [["MSFT", "2026-10-12", 541.15], ["GOOGL", "2026-10-12", 352.72], ["AAPL", "2026-10-12", 340.97], ["AMZN", "2026-10-12", 259.53], ["NVDA", "2026-10-12", 226.32]] },
+  { tab: "أفضل وأسوأ يوم", cols: ["ticker", "best_day_pct", "worst_day_pct"],
+    ex: `أكبر ارتفاع وأكبر انخفاض في يوم واحد لكل سهم. ملاحظة مفيدة: <code>MAX</code> و <code>MIN</code> تتجاهل قيم NULL تلقائيًا، فأول يوم (بدون عائد) لا يسبب مشكلة.`,
+    q: `SELECT ticker,
+       MAX(daily_return_pct) AS best_day_pct,
+       MIN(daily_return_pct) AS worst_day_pct
+FROM daily_prices
+GROUP BY ticker
+ORDER BY best_day_pct DESC;`,
+    rows: [["MSFT", 15.51, -9.99], ["AMZN", 15.32, -5.55], ["GOOGL", 9.96, -7.13], ["NVDA", 8.74, -6.2], ["AAPL", 4.84, -7.35]] },
+  { tab: "متوسط شهري", cols: ["ticker", "month", "avg_close"],
+    ex: `متوسط سعر الإغلاق لكل شهر. <code>substr(date, 1, 7)</code> تأخذ أول 7 أحرف من التاريخ، مثل <code>2026-10</code>. هنا تظهر فائدة حفظ التاريخ بصيغة <code>YYYY-MM-DD</code>.`,
+    note: "النتيجة مختصرة: أول 6 أشهر لسهم AAPL فقط (الكاملة 65 صفًا).",
+    q: `SELECT ticker,
+       substr(date, 1, 7)   AS month,  -- 'YYYY-MM'
+       ROUND(AVG(close), 2) AS avg_close
+FROM daily_prices
+GROUP BY ticker, month
+ORDER BY ticker, month;`,
+    rows: [["AAPL", "2025-10", 259.02], ["AAPL", "2025-11", 270.85], ["AAPL", "2025-12", 275.56], ["AAPL", "2026-01", 256.95], ["AAPL", "2026-02", 268.63], ["AAPL", "2026-03", 254.45]] },
+  { tab: "تقاطع المتوسط", cols: ["ticker", "date", "close", "ma_7"],
+    ex: `الأيام التي صعد فيها السعر من تحت المتوسط إلى فوقه. <code>WITH</code> تنشئ جدولًا مؤقتًا باسم. <code>LAG()</code> تجلب قيمة الصف السابق لنفس السهم (<code>PARTITION BY ticker</code>)، وهي نفس فكرة <code>shift(1)</code> في pandas. هذا مثال على <b>Window function</b>.`,
+    note: "النتيجة مختصرة: أول 6 صفوف من 20.",
+    q: `WITH with_prev AS (
+    SELECT ticker, date, close, ma_7,
+           LAG(close) OVER (PARTITION BY ticker ORDER BY date) AS prev_close,
+           LAG(ma_7)  OVER (PARTITION BY ticker ORDER BY date) AS prev_ma_7
+    FROM daily_prices
+)
+SELECT ticker, date, close, ma_7
+FROM with_prev
+WHERE prev_close <= prev_ma_7
+  AND close > ma_7
+ORDER BY date DESC
+LIMIT 20;`,
+    rows: [["AAPL", "2026-10-06", 333.63, 333.05], ["AMZN", "2026-10-02", 251.52, 248.68], ["GOOGL", "2026-10-02", 343.5, 342.25], ["GOOGL", "2026-09-30", 344.08, 343.29], ["AAPL", "2026-09-25", 341.07, 337.98], ["MSFT", "2026-09-21", 501.61, 497.37]] },
+];
+const sqlTabs = document.getElementById("sqlTabs");
+sqlTabs.innerHTML = SQL.map((s, i) => `<button data-i="${i}">${i + 1} · ${s.tab}</button>`).join("");
+function selectSql(i) {
+  const s = SQL[i];
+  sqlTabs.querySelectorAll("button").forEach((b, j) => b.classList.toggle("on", j === i));
+  document.getElementById("sqlExplain").innerHTML = `<p>${s.ex}</p>`;
+  document.getElementById("sqlCode").innerHTML = hl(s.q, "sql");
+  const cell = v => typeof v === "number" && !Number.isInteger(v) ? v.toFixed(2) : v;
+  document.getElementById("sqlResult").innerHTML =
+    `<thead><tr>${s.cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+    s.rows.map(r => `<tr>${r.map(v => `<td>${cell(v)}</td>`).join("")}</tr>`).join("") + `</tbody>`;
+  document.getElementById("sqlNote").textContent = s.note || "";
+}
+sqlTabs.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) selectSql(+b.dataset.i);
+});
+selectSql(0);
+
+/* ---------------- Glossary ---------------- */
+const TERMS = [
+  ["ETL", "Extract, Transform, Load: نقل البيانات من مصدر إلى مكان تخزين بعد تنظيفها."],
+  ["Pipeline", "سلسلة خطوات تعمل بالترتيب، وناتج كل خطوة هو مدخل الخطوة التالية."],
+  ["DataFrame", "جدول في pandas فيه صفوف وأعمدة، مثل ورقة Excel داخل بايثون."],
+  ["Ticker", "الرمز المختصر للسهم في البورصة، مثل AAPL أو 2222.SR."],
+  ["Adjusted price", "سعر معدّل بعد احتساب توزيعات الأرباح وتقسيم الأسهم، لتكون المقارنة عادلة."],
+  ["NULL / NaN / None", "كلها تعني «قيمة مفقودة»: NULL في SQL، و NaN في pandas، و None في بايثون."],
+  ["Primary Key", "عمود أو أكثر يميّز كل صف، ولا يمكن أن يتكرر."],
+  ["Upsert", "Update + Insert: أدخل الصف، وإن كان موجودًا مسبقًا فحدّثه."],
+  ["Idempotency", "تشغيل العملية مرة واحدة أو عشر مرات يعطي نفس النتيجة."],
+  ["Transaction", "مجموعة أوامر إما تنجح كلها أو تُلغى كلها."],
+  ["Window function", "حساب يعتمد على الصفوف المجاورة، مثل LAG في SQL و rolling و shift في pandas."],
+  ["Moving average", "متوسط آخر N أيام، يتحرك مع كل يوم جديد، ويخفف تذبذب السعر."],
+  ["Unit test", "كود صغير يتأكد أن دالة واحدة تعطي الناتج المتوقع."],
+  [".venv", "بيئة افتراضية: نسخة بايثون ومكتبات خاصة بهذا المشروع فقط."],
+];
+document.getElementById("gloss").innerHTML =
+  TERMS.map(([en, ar]) => `<div class="term"><div class="en">${en}</div><div class="ar">${ar}</div></div>`).join("");
+
+/* ---------------- Highlight current section in the nav ---------------- */
+const navLinks = [...document.querySelectorAll("nav.top a")];
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    navLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
+  });
+}, { rootMargin: "-40% 0px -55% 0px" });
+document.querySelectorAll("main section").forEach(s => spy.observe(s));
+</script>
+</body>
+</html>

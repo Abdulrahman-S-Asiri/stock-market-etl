@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Pipeline output (rebuilt by running main.py)
+data/
+
+# Secrets
+.env
