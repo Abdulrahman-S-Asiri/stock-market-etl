@@ -3,6 +3,7 @@
 import math
 
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 from etl.transform import transform_prices
 
@@ -63,3 +64,12 @@ def test_drops_missing_and_duplicate_rows():
     result = transform_prices(raw)
 
     assert result["date"].tolist() == ["2025-01-01", "2025-01-03"]
+
+
+def test_same_result_after_csv_round_trip(tmp_path):
+    # The Airflow DAG saves raw data as CSV between tasks; nothing may change on the way.
+    raw = make_raw("AAPL", [100, 101, 102, 103, 104, 105, 106, 107])
+    csv_path = tmp_path / "raw.csv"
+    raw.to_csv(csv_path, index=False)
+
+    assert_frame_equal(transform_prices(pd.read_csv(csv_path)), transform_prices(raw))

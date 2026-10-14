@@ -1,0 +1,21 @@
+# Runs all of Airflow in ONE container (`airflow standalone`). Good for learning, not for production.
+services:
+  airflow:
+    build: .
+    command: standalone
+    ports:
+      - "127.0.0.1:8080:8080" # UI at http://localhost:8080, reachable only from this PC
+    environment:
+      # Find our DAG inside the mounted project, and let it `import etl`.
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
+      PYTHONPATH: /opt/airflow/project
+      # Hide the ~80 example DAGs that ship with Airflow.
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      # No login screen. Safe only because the port above is bound to 127.0.0.1.
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
+      # Look for new DAG files every 30 seconds (the default is 5 minutes).
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"
+    volumes:
+      # The container sees this project folder, so data/stocks.db is the same file as on Windows.
+      - .:/opt/airflow/project
+    restart: unless-stopped

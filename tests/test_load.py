@@ -42,3 +42,13 @@ def test_rerun_updates_prices_but_keeps_old_calculated_value(tmp_path):
     load_prices(make_clean(105.0, None), db_path)  # new run: price changed, no ma_7
 
     assert read_rows(db_path) == [("AAPL", "2025-01-10", 105.0, 99.0)]
+
+
+def test_load_from_csv_stores_empty_cells_as_null(tmp_path):
+    # The Airflow DAG reads the clean CSV before loading; empty cells must become real NULLs.
+    csv_path = tmp_path / "clean.csv"
+    make_clean(100.0, None).to_csv(csv_path, index=False)
+
+    load_prices(pd.read_csv(csv_path), tmp_path / "test.db")
+
+    assert read_rows(tmp_path / "test.db") == [("AAPL", "2025-01-10", 100.0, None)]

@@ -237,6 +237,38 @@
   summary { cursor: pointer; font-weight: 600; color: var(--accent); }
   details > div { padding-top: 8px; }
 
+  /* ---------- Airflow section ---------- */
+  .af-graph { display: flex; align-items: stretch; gap: 8px; margin: 4px 0 14px; }
+  .af-node {
+    flex: 1; min-width: 0; text-align: center; background: var(--surface);
+    border: 1px solid var(--line); border-top: 4px solid var(--ink-faint); border-radius: 12px; padding: 10px 8px;
+    transition: background .25s, border-color .25s;
+  }
+  .af-node .n-title { font-family: var(--mono); font-weight: 700; }
+  .af-state { font-size: 13px; color: var(--ink-soft); min-height: 1.6em; }
+  .af-file { font-family: var(--mono); direction: ltr; font-size: 11.5px; color: var(--ink-faint); margin-top: 4px; overflow-wrap: anywhere; }
+  .af-node[data-state="running"] { border-top-color: var(--e); background: var(--e-soft); }
+  .af-node[data-state="up_for_retry"] { border-top-color: var(--t); background: var(--t-soft); }
+  .af-node[data-state="success"] { border-top-color: var(--l); background: var(--l-soft); }
+  .af-node[data-state="success"] .af-file { color: var(--l); font-weight: 600; }
+  .af-link { flex: none; width: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .af-xcom { font-family: var(--mono); direction: ltr; font-size: 10.5px; color: var(--ink-soft); text-align: center; min-height: 2.8em; overflow-wrap: anywhere; }
+  .af-events { margin: 0; padding-inline-start: 22px; font-size: 14.5px; }
+  .af-events li.bad { color: var(--bad); }
+  .af-events li.good { color: var(--l); font-weight: 600; }
+  .af-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-soft); cursor: pointer; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .cron { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; direction: ltr; max-width: 640px; margin: 12px 0; }
+  .cron > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 6px; text-align: center; }
+  .cron .v { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+  .cron .k { direction: rtl; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .ui-steps { padding-inline-start: 22px; max-width: 780px; }
+  @media (max-width: 900px) {
+    .af-graph { flex-direction: column; }
+    .af-link { width: auto; }
+    .af-xcom { min-height: 0; }
+  }
+
   footer { height: 60px; }
 
   /* ---------- Responsive ---------- */
@@ -271,6 +303,7 @@
     <a href="#sql">7 · SQL</a>
     <a href="#glossary">8 · المصطلحات</a>
     <a href="#exercises">9 · تمارين</a>
+    <a href="#airflow">10 · Airflow</a>
   </div>
 </nav>
 
@@ -283,7 +316,7 @@
       <div class="stat"><div class="num">5</div><div class="lbl">أسهم أمريكية</div></div>
       <div class="stat"><div class="num">251</div><div class="lbl">يوم تداول لكل سهم</div></div>
       <div class="stat"><div class="num">1,255</div><div class="lbl">صف في قاعدة البيانات</div></div>
-      <div class="stat"><div class="num">6</div><div class="lbl">اختبارات ناجحة</div></div>
+      <div class="stat"><div class="num">11</div><div class="lbl">اختبارات ناجحة</div></div>
     </div>
     <p class="note-line">كل الأمثلة في هذه الصفحة من بيانات حقيقية حُمّلت يوم 13 أكتوبر 2026 (آخر يوم تداول: 12 أكتوبر).</p>
   </div>
@@ -326,10 +359,14 @@
       <div class="tree-row"><div class="path">main.py</div><div class="desc">يشغّل E ← T ← L بالترتيب</div></div>
       <div class="tree-row"><div class="path">tests/</div><div class="desc">اختبارات ببيانات وهمية</div></div>
       <div class="tree-row"><div class="path">sql/example_queries.sql</div><div class="desc">استعلامات للتدريب</div></div>
+      <div class="tree-row"><div class="path">dags/stock_etl_dag.py</div><div class="desc">Airflow: تشغيل يومي تلقائي</div></div>
+      <div class="tree-row"><div class="path">Dockerfile</div><div class="desc">صورة Airflow مع مكتبات المشروع</div></div>
+      <div class="tree-row"><div class="path">docker-compose.yml</div><div class="desc">تشغيل Airflow على جهازك</div></div>
+      <div class="tree-row"><div class="path">data/raw/ · data/clean/</div><div class="desc">ملفات CSV بين مهام Airflow</div></div>
       <div class="tree-row"><div class="path">data/stocks.db</div><div class="desc">قاعدة البيانات (تُنشأ تلقائيًا)</div></div>
     </div>
     <div class="callout">
-      <p><b>لماذا كل خطوة في ملف؟</b> لأن كل ملف له مهمة واحدة. إذا تغيّر مصدر البيانات، تعدّل extract.py فقط. وإذا أردت عمودًا جديدًا، تعدّل transform.py فقط. وتستطيع اختبار كل خطوة وحدها.</p>
+      <p><b>لماذا كل خطوة في ملف؟</b> لأن كل ملف له مهمة واحدة. إذا تغيّر مصدر البيانات، تعدّل extract.py فقط. وإذا أردت عمودًا جديدًا، تعدّل transform.py فقط. وتستطيع اختبار كل خطوة وحدها. وهذا ما سمح لنا بإضافة Airflow لاحقًا بدون تغيير سطر واحد في هذه الملفات (القسم 10).</p>
     </div>
   </div>
 </section>
@@ -491,6 +528,11 @@
           <tr><td><code>test_drops_missing_and_duplicate_rows</code></td><td>حذف الصفوف الناقصة والمكررة.</td></tr>
           <tr><td><code>test_running_twice_does_not_duplicate_rows</code></td><td>Idempotency: تشغيلان = نفس النتيجة.</td></tr>
           <tr><td><code>test_rerun_updates_prices_but_keeps_old_calculated_value</code></td><td>الـ Upsert يحدّث السعر، و COALESCE يحفظ القيمة القديمة.</td></tr>
+          <tr><td><code>test_same_result_after_csv_round_trip</code></td><td>البيانات لا تتغير بعد حفظها في CSV وقراءتها، كما يفعل Airflow بين المهام.</td></tr>
+          <tr><td><code>test_load_from_csv_stores_empty_cells_as_null</code></td><td>الخلية الفارغة في CSV تصبح NULL حقيقيًا في قاعدة البيانات.</td></tr>
+          <tr><td><code>test_dag_file_has_no_import_errors</code></td><td>ملف الـ DAG يُقرأ بدون أخطاء (يعمل داخل Docker فقط).</td></tr>
+          <tr><td><code>test_tasks_run_in_etl_order</code></td><td>ترتيب المهام: extract ثم transform ثم load (داخل Docker).</td></tr>
+          <tr><td><code>test_runs_one_at_a_time_without_catchup</code></td><td>catchup مطفأ، وتشغيل واحد فقط في نفس الوقت (داخل Docker).</td></tr>
         </tbody>
       </table>
     </div>
@@ -595,17 +637,102 @@
   </div>
 </section>
 
+<!-- ============ 10. Airflow ============ -->
+<section id="airflow">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="step-dot">10</div>
+      <div><h2>Airflow — تشغيل تلقائي كل يوم</h2><div class="sub">dags/stock_etl_dag.py · Dockerfile · docker-compose.yml</div></div>
+    </div>
+    <div class="prose">
+      <p>حتى الآن نشغّل المشروع بأيدينا: <code>python main.py</code>. في الشركات لا أحد يفعل هذا كل يوم. نستخدم <b>Orchestrator</b> (منسّق): أداة تشغّل الـ pipeline في وقت محدد، بالترتيب الصحيح، وتعيد المحاولة إذا فشلت خطوة، وتحفظ سجلًا (log) لكل تشغيل. أشهر أداة لذلك هي <b>Apache Airflow</b>.</p>
+      <p>نكمل تشبيه المطبخ: كودنا هو <b>الطبّاخ</b>، و Airflow هو <b>مدير المطبخ</b>. المدير لا يطبخ بنفسه، لكنه يقرر متى نبدأ، وبأي ترتيب، ويطلب إعادة الطبق إذا احترق.</p>
+      <p>والأهم: <b>لم نغيّر سطرًا واحدًا</b> في extract.py أو transform.py أو load.py. Airflow يستدعي نفس الدوال. هذه فائدة فصل الخطوات التي بنيناها من البداية.</p>
+    </div>
+
+    <h3>المفاهيم الأساسية</h3>
+    <div class="gloss" id="afConcepts"></div>
+
+    <h3>جرّبها: تشغيل الـ DAG</h3>
+    <div class="demo">
+      <div class="demo-controls">
+        <button class="btn" id="afRun">▶ Trigger</button>
+        <label class="af-toggle"><input type="checkbox" id="afFail"> Yahoo يرفض الطلب في المحاولة الأولى</label>
+      </div>
+      <div class="af-graph">
+        <div class="af-node" data-t="extract"><div class="n-title">extract</div><div class="af-state"></div><div class="af-file">data/raw/2026-10-14.csv</div></div>
+        <div class="af-link"><span class="arrow">←</span><span class="af-xcom" id="afX1"></span></div>
+        <div class="af-node" data-t="transform"><div class="n-title">transform</div><div class="af-state"></div><div class="af-file">data/clean/2026-10-14.csv</div></div>
+        <div class="af-link"><span class="arrow">←</span><span class="af-xcom" id="afX2"></span></div>
+        <div class="af-node" data-t="load"><div class="n-title">load</div><div class="af-state"></div><div class="af-file">data/stocks.db</div></div>
+      </div>
+      <ol class="af-events" id="afEvents" aria-live="polite"></ol>
+    </div>
+    <p class="prose" style="color:var(--ink-soft);font-size:15px">الحالات بالإنجليزية كما تظهر في واجهة Airflow: <code>queued</code> في الانتظار، <code>running</code> تعمل، <code>up_for_retry</code> فشلت وستُعاد، <code>success</code> نجحت.</p>
+
+    <h3>الكود: الـ DAG</h3>
+    <div class="file" data-file="dag"></div>
+
+    <h3>جدول التشغيل: ماذا تعني <code>0 22 * * 1-5</code>؟</h3>
+    <p class="prose">هذه صيغة <b>Cron</b>: خمس خانات تُقرأ من اليسار إلى اليمين:</p>
+    <div class="cron">
+      <div><div class="v">0</div><div class="k">الدقيقة 0</div></div>
+      <div><div class="v">22</div><div class="k">الساعة 22 (UTC)</div></div>
+      <div><div class="v">*</div><div class="k">كل أيام الشهر</div></div>
+      <div><div class="v">*</div><div class="k">كل الشهور</div></div>
+      <div><div class="v">1-5</div><div class="k">الاثنين إلى الجمعة</div></div>
+    </div>
+    <p class="prose">أي: الساعة 22:00 بتوقيت UTC من الاثنين إلى الجمعة، وهذا يساوي <b>1:00 فجرًا بتوقيت الرياض</b> (فجر الثلاثاء إلى السبت)، بعد إغلاق السوق الأمريكي. نكتب الوقت بـ UTC لأنه المعيار في الخوادم.</p>
+    <div class="callout">
+      <p><b>ماذا لو كان جهازك مطفأً الساعة 1 فجرًا؟</b> لا يعمل التشغيل في وقته. ومع <code>catchup=False</code>، عندما تشغّل Docker لاحقًا يشغّل Airflow <b>آخر موعد فاته فقط</b>، وليس كل الأيام الماضية. هذا ما حدث فعلًا عند أول تفعيل: ظهر تشغيل باسم <code>scheduled__2026-10-13T22:00</code> فورًا.</p>
+    </div>
+
+    <h3>Docker: كيف يعمل Airflow على Windows؟</h3>
+    <div class="prose">
+      <p>Airflow لا يعمل مباشرة على Windows. لذلك نشغّله داخل <b>Container</b> (حاوية): جهاز Linux صغير ومعزول يعمل داخل جهازك.</p>
+      <p>الـ <b>Image</b> (الصورة) هي الوصفة الجاهزة: نظام Linux + بايثون + Airflow + مكتباتنا. والـ <b>Container</b> هو الطبق المصنوع من هذه الوصفة، ويعمل الآن.</p>
+    </div>
+    <div class="file" data-file="dockerfile"></div>
+    <div class="file" data-file="compose"></div>
+
+    <h3>أوامر التشغيل (PowerShell)</h3>
+    <pre class="solo" id="afCmds"></pre>
+    <p class="prose" style="color:var(--ink-soft);font-size:15px">في الأمر <code>docker compose exec airflow airflow ...</code>: كلمة airflow الأولى اسم الحاوية، والثانية أمر Airflow نفسه.</p>
+
+    <h3>في واجهة Airflow (localhost:8080)</h3>
+    <ol class="ui-steps">
+      <li>ستجد الـ DAG باسم <code>stock_etl</code>.</li>
+      <li>الـ DAG الجديد يبدأ <b>متوقفًا (paused)</b>. فعّل المفتاح بجانب اسمه.</li>
+      <li>اضغط <b>Trigger ▶</b> لتشغيله الآن بدون انتظار الموعد.</li>
+      <li>افتح تبويب <b>Graph</b>: سترى المهام الثلاث تتلوّن بالأخضر واحدة بعد الأخرى.</li>
+      <li>اضغط على أي مهمة ثم <b>Logs</b> لترى ما طبعته، و <b>XCom</b> لترى المسار الذي انتقل للمهمة التالية.</li>
+    </ol>
+
+    <h3>ماذا ترى عند التشغيل (مختصر من مخرجات حقيقية)</h3>
+    <pre class="solo" id="afLogOut"></pre>
+    <p class="prose">ثلاث مهام في حوالي 12 ثانية. وبعد عدة تشغيلات في نفس اليوم بقي الجدول <b>1,260 صفًا</b> (5 صفوف جديدة ليوم 13 أكتوبر فقط) و <b>0 صفوف مكررة</b>: الـ Upsert يحمي الجدول مع Airflow أيضًا.</p>
+
+    <div class="callout bad">
+      <p><b>تنبيهات مهمة:</b></p>
+      <p>• لا تشغّل <code>python main.py</code> أثناء عمل مهمة <code>load</code>، لأن الاثنين يكتبان في نفس ملف SQLite.</p>
+      <p>• <code>docker compose down</code> يحذف سجل التشغيلات في Airflow، لكنه لا يحذف بياناتك في <code>data/</code>. للاستخدام اليومي استخدم <code>stop</code> و <code>start</code>.</p>
+      <p>• إلغاء شاشة الدخول آمن فقط لأن الواجهة مربوطة بجهازك وحده (127.0.0.1). لا تستخدم هذا الإعداد على خادم أبدًا.</p>
+    </div>
+  </div>
+</section>
+
 </main>
 <footer></footer>
 
 <script>
 /* ---------------- Syntax highlighting (tiny, Python + SQL) ---------------- */
 const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const PY_RE = /(#[^\n]*)|("""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|\b(def|return|import|from|for|in|if|not|raise|with|try|finally|continue|lambda|None|True|False|and|or|as|assert)\b|\b(\d+(?:\.\d+)?)\b/g;
+const PY_RE = /(#[^\n]*)|("""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(@\w+|\b(?:def|return|import|from|for|in|if|not|raise|with|try|finally|continue|lambda|None|True|False|and|or|as|assert)\b)|\b(\d+(?:\.\d+)?)\b/g;
 const SQL_RE = /(#[^\n]*|--[^\n]*)|('[^'\n]*')|\b(SELECT|FROM|WHERE|GROUP|BY|ORDER|LIMIT|AS|WITH|OVER|PARTITION|LAG|MAX|MIN|COUNT|AVG|ROUND|AND|DESC|INSERT|INTO|VALUES|ON|CONFLICT|DO|UPDATE|SET|COALESCE|CREATE|TABLE|IF|NOT|EXISTS|PRIMARY|KEY|NULL|TEXT|REAL|INTEGER|substr|ROW_NUMBER|ALTER|ADD|COLUMN)\b|\b(\d+(?:\.\d+)?)\b/g;
-const SHELL_RE = /(#[^\n]*)|("[^"\n]*")|\b(python|pip|pytest|Remove-Item)\b|(\b\d+\b)/g;
+const SHELL_RE = /(#[^\n]*)|("[^"\n]*")|\b(python|pip|pytest|Remove-Item|docker|FROM|COPY|RUN)\b|(\b\d+\b)/g;
+const YAML_RE = /(#[^\n]*)|("[^"\n]*")|^(\s*[A-Za-z_][\w-]*)(?=:)|(\b\d+\b)/gm;
 function hl(code, lang) {
-  const re = lang === "sql" ? SQL_RE : lang === "sh" ? SHELL_RE : PY_RE;
+  const re = lang === "sql" ? SQL_RE : lang === "sh" ? SHELL_RE : lang === "yaml" ? YAML_RE : PY_RE;
   re.lastIndex = 0;
   let out = "", last = 0, m;
   while ((m = re.exec(code))) {
@@ -628,10 +755,15 @@ TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"]`,
     { c: `# How much history to download. Examples: "5d", "1mo", "6mo", "1y", "5y".
 PERIOD = "1y"`,
       n: `كم من التاريخ نريد. <code>"1y"</code> تعني سنة كاملة للخلف من اليوم.` },
-    { c: `# Where the SQLite database file is saved.
+    { c: `# Where the pipeline saves its files.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "stocks.db"`,
+DATA_DIR = PROJECT_ROOT / "data"
+DB_PATH = DATA_DIR / "stocks.db"`,
       n: `<code>__file__</code> هو مسار هذا الملف نفسه، و <code>.parent.parent</code> تصعد مجلدين لتصل إلى جذر المشروع. العلامة <code>/</code> مع <code>Path</code> تربط أجزاء المسار، فيكون الناتج <code>data/stocks.db</code>.` },
+    { c: `# Used by the Airflow DAG: one CSV per run day, before (raw) and after (clean) the transform.
+RAW_DIR = DATA_DIR / "raw"
+CLEAN_DIR = DATA_DIR / "clean"`,
+      n: `مجلدان يستخدمهما Airflow: ملف CSV لكل يوم تشغيل، قبل التنظيف (<code>raw</code>) وبعده (<code>clean</code>). الشرح الكامل في القسم 10.` },
   ]},
 
   extract: { path: "etl/extract.py", chunks: [
@@ -808,6 +940,108 @@ logger = logging.getLogger("pipeline")`,
     { c: `if __name__ == "__main__":
     main()`,
       n: `هذا الشرط يشغّل <code>main()</code> فقط عند تشغيل الملف مباشرة (<code>python main.py</code>)، وليس عند استيراده من ملف آخر أو من الاختبارات.` },
+  ]},
+
+  dag: { path: "dags/stock_etl_dag.py", chunks: [
+    { c: `from datetime import timedelta
+from pathlib import Path
+
+import pendulum
+from airflow.sdk import dag, task
+
+from etl import config`,
+      n: `<code>airflow.sdk</code> هي طريقة Airflow 3 لكتابة الـ DAGs. <code>pendulum</code> مكتبة تواريخ تأتي مع Airflow. ونستورد <code>config</code> هنا فقط لأنه خفيف: قائمة أسهم ومسارات.` },
+    { c: `@dag(
+    schedule="0 22 * * 1-5",  # 22:00 UTC, Mon-Fri = 1:00 AM Riyadh, after the US market closes
+    start_date=pendulum.datetime(2026, 10, 1, tz="UTC"),
+    catchup=False,  # don't run all the past days at once
+    max_active_runs=1,  # one run at a time: runs share the same CSV files and SQLite database
+    default_args={"retries": 2, "retry_delay": timedelta(minutes=5)},  # Yahoo can rate-limit
+    tags=["stocks", "etl"],
+)
+def stock_etl():
+    # Heavy imports (pandas, yfinance) live inside the tasks: Airflow re-reads this file often.`,
+      n: `<code>@dag</code> يحوّل الدالة إلى DAG اسمه <code>stock_etl</code>. <code>schedule</code> متى يعمل (شرحه بالأسفل). <code>catchup=False</code>: لا تشغّل كل الأيام الماضية. <code>max_active_runs=1</code>: تشغيل واحد في كل مرة، لأن التشغيلات تكتب في نفس الملفات. و <code>retries=2</code>: إذا فشلت مهمة أعد المحاولة مرتين، بين كل مرة 5 دقائق، لأن Yahoo قد يرفض الطلبات أحيانًا.` },
+    { c: `    @task
+    def extract() -> str:
+        """Download raw prices and save them as data/raw/<today>.csv."""
+        from etl.extract import extract_prices
+
+        raw = extract_prices(config.TICKERS, config.PERIOD)
+        path = config.RAW_DIR / f"{pendulum.now('UTC').to_date_string()}.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        raw.to_csv(path, index=False)
+
+        # Pass the file path to the next task (small), not the data itself (big).
+        return str(path)`,
+      n: `<code>@task</code> يحوّل الدالة إلى مهمة. نستدعي نفس <code>extract_prices</code> بدون أي تغيير. الـ import داخل المهمة لأن Airflow يعيد قراءة هذا الملف كل 30 ثانية، ومكتبات مثل pandas ثقيلة. نحفظ الخام في <code>data/raw/2026-10-14.csv</code> ونرجع <b>المسار فقط</b>، و Airflow ينقله للمهمة التالية عبر <b>XCom</b>.` },
+    { c: `    @task
+    def transform(raw_path: str) -> str:
+        """Clean the raw CSV and save it as data/clean/<same name>.csv."""
+        import pandas as pd
+
+        from etl.transform import transform_prices
+
+        clean = transform_prices(pd.read_csv(raw_path))
+        path = config.CLEAN_DIR / Path(raw_path).name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        clean.to_csv(path, index=False)
+        return str(path)`,
+      n: `تستقبل المسار من extract، تقرأ الملف، وتستدعي <code>transform_prices</code> كما هي. الناتج يُحفظ في <code>data/clean/</code> بنفس الاسم. هكذا يصبح عندنا طبقتان: <b>raw</b> (خام) و <b>clean</b> (نظيف)، ونستطيع فتح أي ملف ورؤيته، أو إعادة مهمة واحدة فقط.` },
+    { c: `    @task
+    def load(clean_path: str) -> int:
+        """Upsert the clean CSV into SQLite. Returns the number of rows sent."""
+        import pandas as pd
+
+        from etl.load import load_prices
+
+        return load_prices(pd.read_csv(clean_path), config.DB_PATH)`,
+      n: `آخر مهمة: تقرأ الملف النظيف وتستدعي <code>load_prices</code>. وبفضل الـ Upsert، تشغيل الـ DAG أكثر من مرة لا يكرر أي صف.` },
+    { c: `    # Calling the tasks like functions sets the order: extract -> transform -> load.
+    load(transform(extract()))
+
+
+stock_etl()`,
+      n: `هذا السطر يحدد الترتيب: ناتج extract يدخل transform، وناتج transform يدخل load. من هنا يفهم Airflow أن المهام متسلسلة. والسطر الأخير ينشئ الـ DAG فعليًا.` },
+  ]},
+
+  dockerfile: { path: "Dockerfile", chunks: [
+    { lang: "sh", c: `# Official Airflow image (same Python as the local .venv) + this project's packages.
+FROM apache/airflow:3.3.2-python3.13`,
+      n: `<code>FROM</code>: نبدأ من صورة Airflow الرسمية بإصدار ثابت (3.3.2)، ونفس نسخة بايثون الموجودة عندك (3.13)، حتى لا تحدث مفاجآت.` },
+    { lang: "sh", c: `COPY requirements.txt /requirements.txt
+
+# Installing apache-airflow in the same command stops pip from changing Airflow's own version.
+RUN pip install --no-cache-dir "apache-airflow==\${AIRFLOW_VERSION}" -r /requirements.txt`,
+      n: `<code>COPY</code> ينسخ ملف المكتبات إلى الصورة، و <code>RUN</code> يثبّتها (pandas و yfinance و pytest). كتابة Airflow مع إصداره في نفس الأمر تمنع pip من تغيير إصدار Airflow بالخطأ.` },
+  ]},
+
+  compose: { path: "docker-compose.yml", chunks: [
+    { lang: "yaml", c: `# Runs all of Airflow in ONE container (\`airflow standalone\`). Good for learning, not for production.
+services:
+  airflow:
+    build: .
+    command: standalone`,
+      n: `<code>services</code> قائمة الحاويات، وعندنا واحدة اسمها <code>airflow</code>. <code>build: .</code> تعني: ابنِ الصورة من الـ Dockerfile الموجود هنا. و <code>standalone</code> يشغّل كل أجزاء Airflow (الواجهة، والـ Scheduler، وقارئ الـ DAGs) في حاوية واحدة.` },
+    { lang: "yaml", c: `    ports:
+      - "127.0.0.1:8080:8080" # UI at http://localhost:8080, reachable only from this PC`,
+      n: `يربط المنفذ (port) 8080 داخل الحاوية بالمنفذ 8080 في جهازك، فتفتح الواجهة على <code>localhost:8080</code>. كتابة <code>127.0.0.1</code> تعني أن جهازك فقط يصل إليها، وليس أي جهاز آخر في الشبكة.` },
+    { lang: "yaml", c: `    environment:
+      # Find our DAG inside the mounted project, and let it \`import etl\`.
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
+      PYTHONPATH: /opt/airflow/project
+      # Hide the ~80 example DAGs that ship with Airflow.
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      # No login screen. Safe only because the port above is bound to 127.0.0.1.
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
+      # Look for new DAG files every 30 seconds (the default is 5 minutes).
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"`,
+      n: `إعدادات Airflow تُكتب كمتغيرات بيئة بالشكل <code>AIRFLOW__القسم__الخيار</code>. هنا نخبره أين الـ DAG، ونسمح له باستيراد مجلد <code>etl</code>، ونخفي الأمثلة، ونلغي شاشة الدخول (آمن فقط لأن الواجهة على جهازك وحدك).` },
+    { lang: "yaml", c: `    volumes:
+      # The container sees this project folder, so data/stocks.db is the same file as on Windows.
+      - .:/opt/airflow/project
+    restart: unless-stopped`,
+      n: `<b>Volume</b>: مجلد المشروع مشترك بين Windows والحاوية. أي ملف يكتبه Airflow في <code>data/</code> يظهر عندك فورًا، وأي تعديل في الكود يراه Airflow. و <code>restart: unless-stopped</code>: إذا أُعيد تشغيل Docker تعود الحاوية للعمل تلقائيًا.` },
   ]},
 };
 
@@ -1127,9 +1361,120 @@ const TERMS = [
   ["Moving average", "متوسط آخر N أيام، يتحرك مع كل يوم جديد، ويخفف تذبذب السعر."],
   ["Unit test", "كود صغير يتأكد أن دالة واحدة تعطي الناتج المتوقع."],
   [".venv", "بيئة افتراضية: نسخة بايثون ومكتبات خاصة بهذا المشروع فقط."],
+  ["Orchestrator", "أداة تشغّل الـ pipeline في موعده وبالترتيب، وتعيد المحاولة عند الفشل. مثل Airflow."],
+  ["DAG", "Directed Acyclic Graph: مهام مرتبطة بأسهم في اتجاه واحد بدون دوائر. هو الـ pipeline في Airflow."],
+  ["Task", "خطوة واحدة داخل الـ DAG، مثل extract."],
+  ["Scheduler", "جزء من Airflow يراقب المواعيد ويبدأ التشغيلات في وقتها."],
+  ["XCom", "طريقة Airflow لتمرير قيم صغيرة بين المهام، مثل مسار ملف."],
+  ["Cron", "صيغة من 5 خانات لكتابة المواعيد المتكررة، مثل 0 22 * * 1-5."],
+  ["Docker image", "وصفة جاهزة فيها نظام وبرامج ومكتبات، نصنع منها حاويات."],
+  ["Container", "نسخة تعمل من الـ image: جهاز صغير ومعزول داخل جهازك."],
 ];
 document.getElementById("gloss").innerHTML =
   TERMS.map(([en, ar]) => `<div class="term"><div class="en">${en}</div><div class="ar">${ar}</div></div>`).join("");
+
+/* ---------------- Airflow: concepts, DAG run demo, commands ---------------- */
+const AF_CONCEPTS = [
+  ["DAG", "اختصار Directed Acyclic Graph: مهام بينها أسهم في اتجاه واحد، بدون رجوع للخلف. عندنا DAG واحد اسمه stock_etl."],
+  ["Task", "خطوة واحدة داخل الـ DAG. عندنا 3 مهام: extract و transform و load."],
+  ["Schedule", "متى يعمل الـ DAG تلقائيًا. عندنا: أيام العمل الساعة 22:00 UTC."],
+  ["DAG Run", "مرة تشغيل واحدة. كل يوم ينتج DAG Run جديدًا له حالته وسجلاته."],
+  ["XCom", "رسائل صغيرة بين المهام. نرسل بها مسار الملف فقط، وليس البيانات نفسها."],
+  ["Retries", "إعادة المحاولة تلقائيًا عند الفشل. عندنا: مرتان، وبين كل مرة 5 دقائق."],
+  ["catchup", "هل يشغّل كل الأيام الفائتة؟ عندنا False: لا نشغّل الماضي كله."],
+  ["max_active_runs", "كم تشغيلًا يعمل في نفس الوقت. عندنا 1، لأن التشغيلات تكتب في نفس الملفات."],
+];
+document.getElementById("afConcepts").innerHTML =
+  AF_CONCEPTS.map(([en, ar]) => `<div class="term"><div class="en">${en}</div><div class="ar">${ar}</div></div>`).join("");
+
+const AF_TASKS = ["extract", "transform", "load"];
+const AF_STATES = {
+  none: ["—", "لم تبدأ"], queued: ["queued", "في الانتظار"], running: ["running", "تعمل"],
+  up_for_retry: ["up_for_retry", "ستُعاد"], success: ["success", "نجحت"],
+};
+const AF_DONE = {
+  extract: "حفظت <code>data/raw/2026-10-14.csv</code> وأرسلت المسار إلى transform عبر XCom.",
+  transform: "حفظت <code>data/clean/2026-10-14.csv</code> وأرسلت المسار إلى load.",
+  load: "حدّثت 1,255 صفًا في <code>stocks.db</code> بطريقة Upsert.",
+};
+const afRunBtn = document.getElementById("afRun"), afEvents = document.getElementById("afEvents");
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function afSet(t, state) {
+  const node = document.querySelector(`.af-node[data-t="${t}"]`);
+  const [en, ar] = AF_STATES[state];
+  node.dataset.state = state;
+  node.querySelector(".af-state").innerHTML = `<span class="mono">${en}</span> · ${ar}`;
+}
+function afEvent(html, tone) {
+  const li = document.createElement("li");
+  if (tone) li.className = tone;
+  li.innerHTML = html;
+  afEvents.appendChild(li);
+}
+function afReset() {
+  AF_TASKS.forEach(t => afSet(t, "none"));
+  document.getElementById("afX1").textContent = "";
+  document.getElementById("afX2").textContent = "";
+  afEvents.innerHTML = "";
+}
+afRunBtn.addEventListener("click", async () => {
+  afRunBtn.disabled = true;
+  const yahooFails = document.getElementById("afFail").checked;
+  afReset();
+  AF_TASKS.forEach(t => afSet(t, "queued"));
+  afEvent("الـ Scheduler أنشأ تشغيلًا جديدًا (DAG Run). كل المهام في الانتظار.");
+  for (const t of AF_TASKS) {
+    await pause(700);
+    afSet(t, "running");
+    afEvent(`<code>${t}</code>: بدأت (المحاولة 1 من 3).`);
+    await pause(1000);
+    if (t === "extract" && yahooFails) {
+      afSet(t, "up_for_retry");
+      afEvent("<code>extract</code>: فشلت، Yahoo رفض الطلب. سيعيد Airflow المحاولة بعد 5 دقائق (هنا ثانيتان فقط).", "bad");
+      await pause(2000);
+      afSet(t, "running");
+      afEvent("<code>extract</code>: بدأت من جديد (المحاولة 2 من 3).");
+      await pause(1000);
+    }
+    afSet(t, "success");
+    afEvent(`<code>${t}</code>: نجحت. ${AF_DONE[t]}`);
+    if (t === "extract") document.getElementById("afX1").textContent = "XCom: data/raw/2026-10-14.csv";
+    if (t === "transform") document.getElementById("afX2").textContent = "XCom: data/clean/2026-10-14.csv";
+  }
+  afEvent("✅ التشغيل كله نجح (success).", "good");
+  afRunBtn.disabled = false;
+});
+afReset();
+
+document.getElementById("afCmds").innerHTML = hl(
+`# 1. Start Docker Desktop, then build and start Airflow (first time: ~660 MB download)
+docker compose up -d --build
+
+# 2. Open the UI in your browser: http://localhost:8080
+
+# 3. Run the whole DAG once from the terminal (good for testing)
+docker compose exec airflow airflow dags test stock_etl
+
+# 4. All tests inside the container (includes the DAG tests)
+docker compose exec -w /opt/airflow/project airflow python -m pytest -q -p no:cacheprovider
+
+# 5. Stop and start again (keeps the run history)
+docker compose stop
+docker compose start`, "sh");
+
+document.getElementById("afLogOut").textContent =
+`09:40:43  Created dag run: stock_etl  manual__2026-10-14T09:40:43
+09:40:52  Extracted 251 rows for AAPL
+09:40:52  Extracted 251 rows for MSFT
+09:40:53  Extracted 251 rows for NVDA
+09:40:53  Extracted 251 rows for GOOGL
+09:40:54  Extracted 251 rows for AMZN
+09:40:54  [extract]    Done. Returned value was: /opt/airflow/project/data/raw/2026-10-14.csv
+09:40:54  [extract]    Pushing xcom
+09:40:54  [transform]  Done. Returned value was: /opt/airflow/project/data/clean/2026-10-14.csv
+09:40:54  [transform]  Pushing xcom
+09:40:54  [load]       Done. Returned value was: 1255
+09:40:54  Marking run stock_etl manual__2026-10-14T09:40:43 successful`;
 
 /* ---------------- Highlight current section in the nav ---------------- */
 const navLinks = [...document.querySelectorAll("nav.top a")];
